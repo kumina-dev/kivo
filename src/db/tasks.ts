@@ -273,3 +273,21 @@ export async function restoreTask(
     throw new Error('TASK_NOT_ARCHIVED')
   }
 }
+
+export async function deleteArchivedTask(
+  db: SQLiteDatabase,
+  taskId: number,
+): Promise<void> {
+  const result = await db.runAsync(
+    `
+      DELETE FROM tasks
+      WHERE id = ?
+        AND archived_at IS NOT NULL
+    `,
+    taskId,
+  )
+
+  if (result.changes === 0) {
+    throw new Error('TASK_NOT_ARCHIVED')
+  }
+}

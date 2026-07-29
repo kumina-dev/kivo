@@ -207,3 +207,21 @@ export async function restoreReward(
     throw new Error('REWARD_NOT_ARCHIVED')
   }
 }
+
+export async function deleteArchivedReward(
+  db: SQLiteDatabase,
+  rewardId: number,
+): Promise<void> {
+  const result = await db.runAsync(
+    `
+      DELETE FROM rewards
+      WHERE id = ?
+        AND archived_at IS NOT NULL
+    `,
+    rewardId,
+  )
+
+  if (result.changes === 0) {
+    throw new Error('REWARD_NOT_ARCHIVED')
+  }
+}
