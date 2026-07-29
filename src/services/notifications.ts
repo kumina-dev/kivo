@@ -31,7 +31,6 @@ Promise<void> {
         'Daily reminders to review available Kivo tasks.',
       importance:
         Notifications.AndroidImportance.DEFAULT,
-      sound: 'default',
       vibrationPattern: [0, 200],
     },
   )
@@ -91,7 +90,7 @@ export async function scheduleDailyTaskReminder(
     content: {
       title: 'Your tasks are waiting',
       body: 'Review today’s tasks and earn some points.',
-      sound: 'default',
+      sound: true,
       data: {
         url: '/tasks',
       },
