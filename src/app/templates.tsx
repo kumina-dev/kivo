@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import { TemplateCard } from '@/components/templates/template-card'
+import { TemplateReviewSectionHeader } from '@/components/templates/template-review-section-header'
 import { TemplateRewardReviewItem } from '@/components/templates/template-reward-review-item'
 import { TemplateSummaryCard } from '@/components/templates/template-summary-card'
 import { TemplateTaskReviewItem } from '@/components/templates/template-task-review-item'
@@ -74,6 +75,21 @@ export default function TemplatesScreen() {
   const enabledTemplate = useMemo(
     () => getEnabledTemplateItems(review),
     [review],
+  )
+
+  const enabledTaskCount = useMemo(
+    () =>
+      review.tasks.filter((task) => task.enabled)
+        .length,
+    [review.tasks],
+  )
+
+  const enabledRewardCount = useMemo(
+    () =>
+      review.rewards.filter(
+        (reward) => reward.enabled,
+      ).length,
+    [review.rewards],
   )
 
   function toggleTemplate(id: TemplateId): void {
@@ -190,6 +206,16 @@ export default function TemplatesScreen() {
     }))
   }
 
+  function setAllTasksEnabled(enabled: boolean): void {
+    setReview((current) => ({
+      ...current,
+      tasks: current.tasks.map((task) => ({
+        ...task,
+        enabled,
+      })),
+    }))
+  }
+
   function toggleReward(id: string): void {
     setReview((current) => ({
       ...current,
@@ -221,6 +247,37 @@ export default function TemplatesScreen() {
               ...update,
             }
           : reward,
+      ),
+    }))
+  }
+
+  function setAllRewardsEnabled(
+    enabled: boolean,
+  ): void {
+    setReview((current) => ({
+      ...current,
+      rewards: current.rewards.map(
+        (reward) => ({
+          ...reward,
+          enabled,
+        }),
+      ),
+    }))
+  }
+
+  function setAllReviewItemsEnabled(
+    enabled: boolean,
+  ): void {
+    setReview((current) => ({
+      tasks: current.tasks.map((task) => ({
+        ...task,
+        enabled,
+      })),
+      rewards: current.rewards.map(
+        (reward) => ({
+          ...reward,
+          enabled,
+        }),
       ),
     }))
   }
@@ -389,6 +446,30 @@ export default function TemplatesScreen() {
             }
           />
 
+          <View style={styles.reviewActions}>
+            <SecondaryButton
+              disabled={
+                enabledTaskCount === review.tasks.length &&
+                enabledRewardCount === review.rewards.length
+              }
+              label="Enable everything"
+              onPress={() => {
+                setAllReviewItemsEnabled(true)
+              }}
+            />
+
+            <SecondaryButton
+              disabled={
+                enabledTaskCount === 0 &&
+                enabledRewardCount === 0
+              }
+              label="Disable everything"
+              onPress={() => {
+                setAllReviewItemsEnabled(false)
+              }}
+            />
+          </View>
+
           <PrimaryButton
             disabled={
               selectedIds.length === 0 ||
@@ -432,81 +513,101 @@ export default function TemplatesScreen() {
             taskCount={enabledTemplate.tasks.length}
           />
 
-          <View style={styles.section}>
-            <AppText variant="heading">
-              Tasks
-            </AppText>
+          {review.tasks.length > 0 ? (
+            <View style={styles.section}>
+              <TemplateReviewSectionHeader
+                enabledCount={enabledTaskCount}
+                itemCount={review.tasks.length}
+                onDisableAll={() => {
+                  setAllTasksEnabled(false)
+                }}
+                onEnableAll={() => {
+                  setAllTasksEnabled(true)
+                }}
+                title="Tasks"
+              />
 
-            <View style={styles.items}>
-              {review.tasks.map((task) => (
-                <TemplateTaskReviewItem
-                  key={task.id}
-                  description={task.description}
-                  enabled={task.enabled}
-                  onChangeDescription={(description) =>
-                    updateTask(task.id, {
-                      description,
-                    })
-                  }
-                  onChangePoints={(points) =>
-                    updateTask(task.id, {
-                      points,
-                    })
-                  }
-                  onChangeRepeatRule={(repeatRule) =>
-                    updateTask(task.id, {
-                      repeatRule,
-                    })
-                  }
-                  onChangeTitle={(title) =>
-                    updateTask(task.id, {
-                      title,
-                    })
-                  }
-                  onToggle={() => toggleTask(task.id)}
-                  points={task.points}
-                  repeatRule={task.repeatRule}
-                  title={task.title}
-                />
-              ))}
+              <View style={styles.items}>
+                {review.tasks.map((task) => (
+                  <TemplateTaskReviewItem
+                    key={task.id}
+                    description={task.description}
+                    enabled={task.enabled}
+                    onChangeDescription={(description) =>
+                      updateTask(task.id, {
+                        description,
+                      })
+                    }
+                    onChangePoints={(points) =>
+                      updateTask(task.id, {
+                        points,
+                      })
+                    }
+                    onChangeRepeatRule={(repeatRule) =>
+                      updateTask(task.id, {
+                        repeatRule,
+                      })
+                    }
+                    onChangeTitle={(title) =>
+                      updateTask(task.id, {
+                        title,
+                      })
+                    }
+                    onToggle={() => toggleTask(task.id)}
+                    points={task.points}
+                    repeatRule={task.repeatRule}
+                    title={task.title}
+                  />
+                ))}
+              </View>
             </View>
-          </View>
+          ) : null}
 
-          <View style={styles.section}>
-            <AppText variant="heading">
-              Rewards
-            </AppText>
+          {review.rewards.length > 0 ? (
+            <View style={styles.section}>
+              <TemplateReviewSectionHeader
+                enabledCount={enabledRewardCount}
+                itemCount={review.rewards.length}
+                onDisableAll={() => {
+                  setAllRewardsEnabled(false)
+                }}
+                onEnableAll={() => {
+                  setAllRewardsEnabled(true)
+                }}
+                title="Rewards"
+              />
 
-            <View style={styles.items}>
-              {review.rewards.map((reward) => (
-                <TemplateRewardReviewItem
-                  key={reward.id}
-                  cost={reward.cost}
-                  description={reward.description}
-                  enabled={reward.enabled}
-                  onChangeCost={(cost) =>
-                    updateReward(reward.id, {
-                      cost,
-                    })
-                  }
-                  onChangeDescription={(description) =>
-                    updateReward(reward.id, {
-                      description,
-                    })
-                  }
-                  onChangeTitle={(title) =>
-                    updateReward(reward.id, {
-                      title,
-                    })
-                  }
-                  onToggle={() =>
-                    toggleReward(reward.id)
-                  }
-                  title={reward.title}
-                />
-              ))}
+              <View style={styles.items}>
+                {review.rewards.map((reward) => (
+                  <TemplateRewardReviewItem
+                    key={reward.id}
+                    cost={reward.cost}
+                    description={reward.description}
+                    enabled={reward.enabled}
+                    onChangeCost={(cost) =>
+                      updateReward(reward.id, {
+                        cost,
+                      })
+                    }
+                    onChangeDescription={(description) =>
+                      updateReward(reward.id, {
+                        description,
+                      })
+                    }
+                    onChangeTitle={(title) =>
+                      updateReward(reward.id, {
+                        title,
+                      })
+                    }
+                    onToggle={() =>
+                      toggleReward(reward.id)
+                    }
+                    title={reward.title}
+                  />
+                ))}
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <View style={styles.actions}>
             <SecondaryButton
@@ -523,8 +624,11 @@ export default function TemplatesScreen() {
               }
               label={
                 importing
-                  ? 'Adding setup…'
-                  : 'Add selected items'
+                  ? 'Adding items…'
+                  : `Add ${
+                      enabledTemplate.tasks.length +
+                      enabledTemplate.rewards.length
+                    } items`
               }
               onPress={() => {
                 void handleImport()
@@ -557,5 +661,8 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing.md,
     paddingBottom: spacing.xl,
+  },
+  reviewActions: {
+    gap: spacing.sm,
   },
 })
