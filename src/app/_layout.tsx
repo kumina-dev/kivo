@@ -100,6 +100,13 @@ export default function RootLayout() {
               title: 'Statistics',
             }}
           />
+
+          <Stack.Screen
+            name="calendar"
+            options={{
+              title: 'Calendar',
+            }}
+          />
         </Stack>
       </SQLiteProvider>
     </SafeAreaProvider>

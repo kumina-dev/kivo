@@ -112,6 +112,23 @@ export default function SettingsScreen() {
         <Card style={styles.managementCard}>
           <View style={styles.cardHeader}>
             <AppText variant="heading">
+              Calendar
+            </AppText>
+
+            <AppText variant="caption">
+              Review task completions and earned points by day.
+            </AppText>
+          </View>
+
+          <SecondaryButton
+            label="View activity calendar"
+            onPress={() => router.push('/calendar')}
+          />
+        </Card>
+
+        <Card style={styles.managementCard}>
+          <View style={styles.cardHeader}>
+            <AppText variant="heading">
               Statistics
             </AppText>
 
