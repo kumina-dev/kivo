@@ -25,6 +25,15 @@ function mapReward(row: RewardRow): Reward {
   }
 }
 
+const rewardColumns = `
+  id,
+  title,
+  description,
+  cost,
+  created_at,
+  archived_at
+`
+
 export async function createReward(
   db: SQLiteDatabase,
   input: CreateRewardInput,
@@ -54,13 +63,7 @@ export async function getRewardById(
 ): Promise<Reward | null> {
   const row = await db.getFirstAsync<RewardRow>(
     `
-      SELECT
-        id,
-        title,
-        description,
-        cost,
-        created_at,
-        archived_at
+      SELECT ${rewardColumns}
       FROM rewards
       WHERE id = ?
     `,
@@ -74,16 +77,23 @@ export async function getActiveRewards(
   db: SQLiteDatabase,
 ): Promise<Reward[]> {
   const rows = await db.getAllAsync<RewardRow>(`
-    SELECT
-      id,
-      title,
-      description,
-      cost,
-      created_at,
-      archived_at
+    SELECT ${rewardColumns}
     FROM rewards
     WHERE archived_at IS NULL
     ORDER BY cost ASC, created_at DESC
+  `)
+
+  return rows.map(mapReward)
+}
+
+export async function getArchivedRewards(
+  db: SQLiteDatabase,
+): Promise<Reward[]> {
+  const rows = await db.getAllAsync<RewardRow>(`
+    SELECT ${rewardColumns}
+    FROM rewards
+    WHERE archived_at IS NOT NULL
+    ORDER BY archived_at DESC, id DESC
   `)
 
   return rows.map(mapReward)
@@ -177,4 +187,23 @@ export async function archiveReward(
     new Date().toISOString(),
     rewardId,
   )
+}
+
+export async function restoreReward(
+  db: SQLiteDatabase,
+  rewardId: number,
+): Promise<void> {
+  const result = await db.runAsync(
+    `
+      UPDATE rewards
+      SET archived_at = NULL
+      WHERE id = ?
+        AND archived_at IS NOT NULL
+    `,
+    rewardId,
+  )
+
+  if (result.changes === 0) {
+    throw new Error('REWARD_NOT_ARCHIVED')
+  }
 }

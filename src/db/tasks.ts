@@ -1,6 +1,10 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-import type { CreateTaskInput, RepeatRule, Task } from '@/types/task'
+import type {
+  CreateTaskInput,
+  RepeatRule,
+  Task,
+} from '@/types/task'
 import {
   getCompletionPeriod,
   isTaskAvailableToday,
@@ -27,6 +31,16 @@ function mapTask(row: TaskRow): Task {
     archivedAt: row.archived_at,
   }
 }
+
+const taskColumns = `
+  id,
+  title,
+  description,
+  points,
+  repeat_rule,
+  created_at,
+  archived_at
+`
 
 export async function createTask(
   db: SQLiteDatabase,
@@ -59,14 +73,7 @@ export async function getTaskById(
 ): Promise<Task | null> {
   const row = await db.getFirstAsync<TaskRow>(
     `
-      SELECT
-        id,
-        title,
-        description,
-        points,
-        repeat_rule,
-        created_at,
-        archived_at
+      SELECT ${taskColumns}
       FROM tasks
       WHERE id = ?
     `,
@@ -80,17 +87,23 @@ export async function getActiveTasks(
   db: SQLiteDatabase,
 ): Promise<Task[]> {
   const rows = await db.getAllAsync<TaskRow>(`
-    SELECT
-      id,
-      title,
-      description,
-      points,
-      repeat_rule,
-      created_at,
-      archived_at
+    SELECT ${taskColumns}
     FROM tasks
     WHERE archived_at IS NULL
     ORDER BY created_at DESC
+  `)
+
+  return rows.map(mapTask)
+}
+
+export async function getArchivedTasks(
+  db: SQLiteDatabase,
+): Promise<Task[]> {
+  const rows = await db.getAllAsync<TaskRow>(`
+    SELECT ${taskColumns}
+    FROM tasks
+    WHERE archived_at IS NOT NULL
+    ORDER BY archived_at DESC, id DESC
   `)
 
   return rows.map(mapTask)
@@ -165,6 +178,24 @@ export async function completeTask(
   const completionPeriod = getCompletionPeriod(task.repeatRule)
 
   await db.withTransactionAsync(async () => {
+    const activeTask = await db.getFirstAsync<{
+      id: number
+      points: number
+      repeat_rule: RepeatRule
+    }>(
+      `
+        SELECT id, points, repeat_rule
+        FROM tasks
+        WHERE id = ?
+          AND archived_at IS NULL
+      `,
+      task.id,
+    )
+
+    if (!activeTask) {
+      throw new Error('TASK_NOT_AVAILABLE')
+    }
+
     await db.runAsync(
       `
         INSERT INTO task_completions (
@@ -174,7 +205,7 @@ export async function completeTask(
         )
         VALUES (?, ?, ?)
       `,
-      task.id,
+      activeTask.id,
       completionPeriod,
       completedAt,
     )
@@ -189,12 +220,12 @@ export async function completeTask(
         )
         VALUES ('task_completion', ?, ?, ?)
       `,
-      task.points,
-      task.id,
+      activeTask.points,
+      activeTask.id,
       completedAt,
     )
 
-    if (task.repeatRule === 'none') {
+    if (activeTask.repeat_rule === 'none') {
       await db.runAsync(
         `
           UPDATE tasks
@@ -202,7 +233,7 @@ export async function completeTask(
           WHERE id = ?
         `,
         completedAt,
-        task.id,
+        activeTask.id,
       )
     }
   })
@@ -222,4 +253,23 @@ export async function archiveTask(
     new Date().toISOString(),
     taskId,
   )
+}
+
+export async function restoreTask(
+  db: SQLiteDatabase,
+  taskId: number,
+): Promise<void> {
+  const result = await db.runAsync(
+    `
+      UPDATE tasks
+      SET archived_at = NULL
+      WHERE id = ?
+        AND archived_at IS NOT NULL
+    `,
+    taskId,
+  )
+
+  if (result.changes === 0) {
+    throw new Error('TASK_NOT_ARCHIVED')
+  }
 }

@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useState } from 'react'
 import {
@@ -12,6 +12,7 @@ import { PointAdjustmentForm } from '@/components/settings/point-adjustment-form
 import { AppText } from '@/components/ui/app-text'
 import { Card } from '@/components/ui/card'
 import { Screen } from '@/components/ui/screen'
+import { SecondaryButton } from '@/components/ui/secondary-button'
 import { colors, spacing } from '@/constants/theme'
 import {
   createManualPointAdjustment,
@@ -99,8 +100,7 @@ export default function SettingsScreen() {
               variant="caption"
               style={styles.negativeBalance}
             >
-              The balance is below zero. Apparently even fictional
-              economies can discover debt.
+              The balance is below zero.
             </AppText>
           ) : null}
         </Card>
@@ -108,6 +108,21 @@ export default function SettingsScreen() {
         <PointAdjustmentForm
           onSubmit={handleAdjustment}
         />
+
+        <Card style={styles.archiveCard}>
+          <View style={styles.archiveHeader}>
+            <AppText variant="heading">Archive</AppText>
+
+            <AppText variant="caption">
+              Restore tasks and rewards that were archived earlier.
+            </AppText>
+          </View>
+
+          <SecondaryButton
+            label="Manage archived items"
+            onPress={() => router.push('/archive')}
+          />
+        </Card>
 
         <Card style={styles.infoCard}>
           <AppText variant="heading">
@@ -134,8 +149,8 @@ const styles = StyleSheet.create({
   },
   loadingBalance: {
     alignItems: 'flex-start',
-    minHeight: 44,
     justifyContent: 'center',
+    minHeight: 44,
   },
   balance: {
     fontSize: 32,
@@ -144,6 +159,12 @@ const styles = StyleSheet.create({
   },
   negativeBalance: {
     color: colors.danger,
+  },
+  archiveCard: {
+    gap: spacing.xl,
+  },
+  archiveHeader: {
+    gap: spacing.sm,
   },
   infoCard: {
     gap: spacing.md,

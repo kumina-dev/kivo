@@ -86,6 +86,13 @@ export default function RootLayout() {
             name="settings"
             options={{ title: 'Settings' }}
           />
+
+          <Stack.Screen
+            name="archive"
+            options={{
+              title: 'Archive',
+            }}
+          />
         </Stack>
       </SQLiteProvider>
     </SafeAreaProvider>
