@@ -32,6 +32,9 @@ import type {
   NotificationSettings,
 } from '@/types/notification-settings'
 
+import { BackupExportCard } from '@/components/settings/backup-export-card'
+import { exportBackup } from '@/services/backup-export'
+
 export default function SettingsScreen() {
   const db = useSQLiteContext()
 
@@ -40,6 +43,8 @@ export default function SettingsScreen() {
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>()
   const [savingReminder, setSavingReminder] =
+    useState(false)
+  const [exportingBackup, setExportingBackup] =
     useState(false)
 
   const loadBalance = useCallback(async (): Promise<void> => {
@@ -169,6 +174,33 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleExportBackup(): Promise<void> {
+    try {
+      setExportingBackup(true)
+
+      const result = await exportBackup(db)
+
+      Alert.alert(
+        'Backup created',
+        [
+          `${result.summary.tasks} tasks`,
+          `${result.summary.taskCompletions} completions`,
+          `${result.summary.rewards} rewards`,
+          `${result.summary.pointTransactions} point transactions`,
+        ].join('\n'),
+      )
+    } catch (error) {
+      console.error(error)
+
+      Alert.alert(
+        'Could not export backup',
+        'Kivo could not create or share the backup file.',
+      )
+    } finally {
+      setExportingBackup(false)
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.content}>
@@ -208,6 +240,13 @@ export default function SettingsScreen() {
             settings={notificationSettings}
           />
         ) : null}
+
+        <BackupExportCard
+          exporting={exportingBackup}
+          onExport={() => {
+            void handleExportBackup()
+          }}
+        />
 
         <Card style={styles.managementCard}>
           <View style={styles.cardHeader}>
