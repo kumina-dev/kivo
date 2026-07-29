@@ -12,6 +12,7 @@ import { Screen } from '@/components/ui/screen'
 import { SecondaryButton } from '@/components/ui/secondary-button'
 import { starterTemplates } from '@/constants/starter-templates'
 import { spacing } from '@/constants/theme'
+import { getMissingTemplateItems } from '@/db/template-items'
 import {
   getTemplateInstallationStatuses,
   getTemplateStatus,
@@ -24,6 +25,7 @@ import {
   getEnabledTemplateItems,
 } from '@/lib/templates'
 import type {
+  CombinedTemplate,
   TemplateId,
   TemplateInstallationStatus,
   TemplateReview,
@@ -41,6 +43,15 @@ export default function TemplatesScreen() {
   const [selectedIds, setSelectedIds] = useState<
     TemplateId[]
   >([])
+
+  const [reviewTemplate, setReviewTemplate] =
+    useState<CombinedTemplate>({
+      tasks: [],
+      rewards: [],
+    })
+
+  const [preparingReview, setPreparingReview] =
+    useState(false)
 
   const [review, setReview] =
     useState<TemplateReview>({
@@ -82,19 +93,62 @@ export default function TemplatesScreen() {
     )
   }
 
-  function openReview(): void {
+  async function openReview(): Promise<void> {
     if (selectedIds.length === 0) {
       return
     }
 
-    setReview(
-      createTemplateReview(combinedTemplate),
-    )
+    try {
+      setPreparingReview(true)
 
-    setStep('review')
+      const missingTemplate =
+        await getMissingTemplateItems(
+          db,
+          combinedTemplate,
+        )
+
+      if (
+        missingTemplate.tasks.length === 0 &&
+        missingTemplate.rewards.length === 0
+      ) {
+        await loadInstallationStatuses()
+
+        showDialog({
+          title: 'Nothing new to add',
+          message:
+            'Every task and reward from the selected templates already exists in Kivo.',
+        })
+
+        return
+      }
+
+      setReviewTemplate(missingTemplate)
+      setReview(createTemplateReview(missingTemplate))
+      setStep('review')
+    } catch (error) {
+      console.error(error)
+
+      showDialog({
+        title: 'Could not prepare templates',
+        message:
+          'Kivo could not determine which template items are missing.',
+      })
+    } finally {
+      setPreparingReview(false)
+    }
   }
 
   function returnToSelection(): void {
+    setReview({
+      tasks: [],
+      rewards: [],
+    })
+
+    setReviewTemplate({
+      tasks: [],
+      rewards: [],
+    })
+
     setStep('select')
   }
 
@@ -238,10 +292,17 @@ export default function TemplatesScreen() {
       })
 
       setSelectedIds([])
+
       setReview({
         tasks: [],
         rewards: [],
       })
+
+      setReviewTemplate({
+        tasks: [],
+        rewards: [],
+      })
+
       setStep('select')
     } catch (error) {
       console.error(error)
@@ -324,13 +385,20 @@ export default function TemplatesScreen() {
           />
 
           <PrimaryButton
-            disabled={selectedIds.length === 0}
-            label={
-              selectedIds.length === 0
-                ? 'Select templates'
-                : 'Review setup'
+            disabled={
+              selectedIds.length === 0 ||
+              preparingReview
             }
-            onPress={openReview}
+            label={
+              preparingReview
+                ? 'Checking templates…'
+                : selectedIds.length === 0
+                  ? 'Select templates'
+                  : 'Review missing items'
+            }
+            onPress={() => {
+              void openReview()
+            }}
           />
         </View>
       ) : (
@@ -343,6 +411,11 @@ export default function TemplatesScreen() {
             <AppText variant="caption">
               Disable anything you do not need and adjust
               titles or point values before importing.
+            </AppText>
+
+            <AppText variant="caption">
+              Showing only items that are not already present in
+              Kivo.
             </AppText>
           </View>
 
