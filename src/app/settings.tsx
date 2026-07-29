@@ -3,9 +3,8 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
-  View,
+  View
 } from 'react-native'
 
 import { BackupCard } from '@/components/settings/backup-card'
@@ -24,6 +23,7 @@ import {
   createManualPointAdjustment,
   getPointBalance,
 } from '@/db/points'
+import { useDialog } from '@/hooks/use-dialog'
 import { exportBackup } from '@/services/backup-export'
 import {
   importSelectedBackup,
@@ -41,6 +41,7 @@ import type {
 
 export default function SettingsScreen() {
   const db = useSQLiteContext()
+  const { showDialog } = useDialog()
 
   const [balance, setBalance] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -105,10 +106,11 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error(error)
 
-      Alert.alert(
-        'Could not update balance',
-        'Something went wrong while saving the adjustment.',
-      )
+      showDialog({
+        title: 'Could not update balance',
+        message:
+          'Something went wrong while saving the adjustment.',
+      })
 
       throw error
     }
@@ -129,10 +131,11 @@ export default function SettingsScreen() {
           await requestNotificationPermission()
 
         if (permission !== 'granted') {
-          Alert.alert(
-            'Notifications are disabled',
-            'Allow notifications in your device settings before enabling the reminder.',
-          )
+          showDialog({
+            title: 'Notifications are disabled',
+            message:
+              'Allow notifications in your device settings before enabling the reminder.',
+          })
 
           return
         }
@@ -156,25 +159,26 @@ export default function SettingsScreen() {
 
       setNotificationSettings(nextSettings)
 
-      Alert.alert(
-        input.enabled
+      showDialog({
+        title: input.enabled
           ? 'Reminder scheduled'
           : 'Reminder disabled',
-        input.enabled
+        message: input.enabled
           ? `Kivo will remind you daily at ${String(
               input.hour,
             ).padStart(2, '0')}:${String(
               input.minute,
             ).padStart(2, '0')}.`
           : 'The daily task reminder has been removed.',
-      )
+      })
     } catch (error) {
       console.error(error)
 
-      Alert.alert(
-        'Could not save reminder',
-        'Something went wrong while updating the notification schedule.',
-      )
+      showDialog({
+        title: 'Could not save reminder',
+        message:
+          'Something went wrong while updating the notification schedule.',
+      })
     } finally {
       setSavingReminder(false)
     }
@@ -186,22 +190,23 @@ export default function SettingsScreen() {
 
       const result = await exportBackup(db)
 
-      Alert.alert(
-        'Backup created',
-        [
+      showDialog({
+        title: 'Backup created',
+        message: [
           `${result.summary.tasks} tasks`,
           `${result.summary.taskCompletions} completions`,
           `${result.summary.rewards} rewards`,
           `${result.summary.pointTransactions} point transactions`,
         ].join('\n'),
-      )
+      })
     } catch (error) {
       console.error(error)
 
-      Alert.alert(
-        'Could not export backup',
-        'Kivo could not create or share the backup file.',
-      )
+      showDialog({
+        title: 'Could not export backup',
+        message:
+          'Kivo could not create or share the backup file.',
+      })
     } finally {
       setExportingBackup(false)
     }
@@ -219,10 +224,10 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error(error)
 
-      Alert.alert(
-        'Invalid backup',
-        getBackupImportErrorMessage(error),
-      )
+      showDialog({
+        title: 'Invalid backup',
+        message: getBackupImportErrorMessage(error),
+      })
     }
   }
 
@@ -231,9 +236,10 @@ export default function SettingsScreen() {
   ): void {
     const { summary } = selection
 
-    Alert.alert(
-      'Replace current Kivo data?',
-      [
+    showDialog({
+      dismissible: true,
+      title: 'Replace current Kivo data?',
+      message: [
         `File: ${selection.fileName}`,
         '',
         `${summary.tasks} tasks`,
@@ -243,20 +249,20 @@ export default function SettingsScreen() {
         '',
         'The current data on this device will be replaced.',
       ].join('\n'),
-      [
+      actions: [
         {
-          style: 'cancel',
-          text: 'Cancel',
+          label: 'Cancel',
+          variant: 'secondary',
         },
         {
-          style: 'destructive',
-          text: 'Replace data',
-          onPress: () => {
-            void restoreBackup(selection)
+          label: 'Replace data',
+          variant: 'destructive',
+          onPress: async () => {
+            await restoreBackup(selection)
           },
         },
       ],
-    )
+    })
   }
 
   async function restoreBackup(
@@ -322,17 +328,19 @@ export default function SettingsScreen() {
       setBalance(nextBalance)
       setNotificationSettings(nextSettings)
 
-      Alert.alert(
-        'Backup restored',
-        'The selected Kivo backup has replaced the local data on this device.',
-      )
+      showDialog({
+        title: 'Backup restored',
+        message:
+          'The selected Kivo backup has replaced the local data on this device.',
+      })
     } catch (error) {
       console.error(error)
 
-      Alert.alert(
-        'Could not restore backup',
-        'Kivo could not replace the local data with this backup.',
-      )
+      showDialog({
+        title: 'Could not restore backup',
+        message:
+          'Kivo could not replace the local data with this backup.',
+      })
     } finally {
       setImportingBackup(false)
     }

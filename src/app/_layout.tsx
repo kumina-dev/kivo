@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors } from '@/constants/theme'
 import { migrateDatabase } from '@/db/migrations'
 
+import { AppDialog } from '@/components/ui/app-dialog'
 import * as Notifications from 'expo-notifications'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
@@ -159,6 +160,8 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+
+        <AppDialog />
       </SQLiteProvider>
     </SafeAreaProvider>
   );
