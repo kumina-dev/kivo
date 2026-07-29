@@ -8,9 +8,10 @@
     "scheme": "kivo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "supportsTablet": true
     },
     "android": {
+      "package": "com.thekumina.kivo",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,17 +26,20 @@
     },
     "plugins": [
       "expo-router",
+      "expo-sqlite",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
           }
         }
-      ],
-      "expo-sqlite"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

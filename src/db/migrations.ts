@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const databaseVersion = 4
+const databaseVersion = 5
 
 export async function migrateDatabase(
   db: SQLiteDatabase,
@@ -8,9 +8,9 @@ export async function migrateDatabase(
   await db.execAsync('PRAGMA journal_mode = WAL;')
   await db.execAsync('PRAGMA foreign_keys = ON;')
 
-  const result = await db.getFirstAsync<{ user_version: number }>(
-    'PRAGMA user_version',
-  )
+  const result = await db.getFirstAsync<{
+    user_version: number
+  }>('PRAGMA user_version')
 
   let currentVersion = result?.user_version ?? 0
 
@@ -178,5 +178,40 @@ export async function migrateDatabase(
     currentVersion = 4
   }
 
-  await db.execAsync(`PRAGMA user_version = ${currentVersion};`)
+  if (currentVersion === 4) {
+    await db.execAsync(`
+      CREATE TABLE notification_settings (
+        id INTEGER PRIMARY KEY
+          CHECK (id = 1),
+        daily_reminder_enabled INTEGER NOT NULL DEFAULT 0
+          CHECK (daily_reminder_enabled IN (0, 1)),
+        daily_reminder_hour INTEGER NOT NULL DEFAULT 18
+          CHECK (
+            daily_reminder_hour >= 0
+            AND daily_reminder_hour <= 23
+          ),
+        daily_reminder_minute INTEGER NOT NULL DEFAULT 0
+          CHECK (
+            daily_reminder_minute >= 0
+            AND daily_reminder_minute <= 59
+          ),
+        daily_reminder_identifier TEXT
+      );
+
+      INSERT INTO notification_settings (
+        id,
+        daily_reminder_enabled,
+        daily_reminder_hour,
+        daily_reminder_minute,
+        daily_reminder_identifier
+      )
+      VALUES (1, 0, 18, 0, NULL);
+    `)
+
+    currentVersion = 5
+  }
+
+  await db.execAsync(
+    `PRAGMA user_version = ${currentVersion};`,
+  )
 }

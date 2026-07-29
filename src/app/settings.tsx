@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native'
 
+import { DailyReminderForm } from '@/components/settings/daily-reminder-form'
 import { PointAdjustmentForm } from '@/components/settings/point-adjustment-form'
 import { AppText } from '@/components/ui/app-text'
 import { Card } from '@/components/ui/card'
@@ -15,15 +16,31 @@ import { Screen } from '@/components/ui/screen'
 import { SecondaryButton } from '@/components/ui/secondary-button'
 import { colors, spacing } from '@/constants/theme'
 import {
+  getNotificationSettings,
+  updateNotificationSettings,
+} from '@/db/notification-settings'
+import {
   createManualPointAdjustment,
   getPointBalance,
 } from '@/db/points'
+import {
+  replaceDailyTaskReminder,
+  requestNotificationPermission,
+} from '@/services/notifications'
+import type {
+  DailyReminderInput,
+  NotificationSettings,
+} from '@/types/notification-settings'
 
 export default function SettingsScreen() {
   const db = useSQLiteContext()
 
   const [balance, setBalance] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationSettings>()
+  const [savingReminder, setSavingReminder] =
+    useState(false)
 
   const loadBalance = useCallback(async (): Promise<void> => {
     const nextBalance = await getPointBalance(db)
@@ -36,10 +53,19 @@ export default function SettingsScreen() {
 
       async function load(): Promise<void> {
         try {
-          const nextBalance = await getPointBalance(db)
+          const [
+            nextBalance,
+            nextNotificationSettings,
+          ] = await Promise.all([
+            getPointBalance(db),
+            getNotificationSettings(db),
+          ])
 
           if (active) {
             setBalance(nextBalance)
+            setNotificationSettings(
+              nextNotificationSettings,
+            )
           }
         } catch (error) {
           console.error(error)
@@ -77,6 +103,72 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleReminderSubmit(
+    input: DailyReminderInput,
+  ): Promise<void> {
+    if (!notificationSettings) {
+      return
+    }
+
+    try {
+      setSavingReminder(true)
+
+      if (input.enabled) {
+        const permission =
+          await requestNotificationPermission()
+
+        if (permission !== 'granted') {
+          Alert.alert(
+            'Notifications are disabled',
+            'Allow notifications in your device settings before enabling the reminder.',
+          )
+
+          return
+        }
+      }
+
+      const identifier =
+        await replaceDailyTaskReminder(
+          notificationSettings
+            .dailyReminderIdentifier,
+          input,
+        )
+
+      await updateNotificationSettings(
+        db,
+        input,
+        identifier,
+      )
+
+      const nextSettings =
+        await getNotificationSettings(db)
+
+      setNotificationSettings(nextSettings)
+
+      Alert.alert(
+        input.enabled
+          ? 'Reminder scheduled'
+          : 'Reminder disabled',
+        input.enabled
+          ? `Kivo will remind you daily at ${String(
+              input.hour,
+            ).padStart(2, '0')}:${String(
+              input.minute,
+            ).padStart(2, '0')}.`
+          : 'The daily task reminder has been removed.',
+      )
+    } catch (error) {
+      console.error(error)
+
+      Alert.alert(
+        'Could not save reminder',
+        'Something went wrong while updating the notification schedule.',
+      )
+    } finally {
+      setSavingReminder(false)
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.content}>
@@ -108,6 +200,14 @@ export default function SettingsScreen() {
         <PointAdjustmentForm
           onSubmit={handleAdjustment}
         />
+
+        {notificationSettings ? (
+          <DailyReminderForm
+            onSubmit={handleReminderSubmit}
+            saving={savingReminder}
+            settings={notificationSettings}
+          />
+        ) : null}
 
         <Card style={styles.managementCard}>
           <View style={styles.cardHeader}>

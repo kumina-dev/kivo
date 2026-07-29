@@ -6,7 +6,51 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors } from '@/constants/theme'
 import { migrateDatabase } from '@/db/migrations'
 
+import * as Notifications from 'expo-notifications'
+import { router } from 'expo-router'
+import { useEffect } from 'react'
+
+function useNotificationNavigation(): void {
+  useEffect(() => {
+    function openNotification(
+      notification: Notifications.Notification,
+    ): void {
+      const url =
+        notification.request.content.data?.url
+
+      if (url === '/tasks') {
+        router.push('/tasks')
+      }
+    }
+
+    const lastResponse =
+      Notifications.getLastNotificationResponse()
+
+    if (lastResponse?.notification) {
+      openNotification(
+        lastResponse.notification,
+      )
+    }
+
+    const subscription =
+      Notifications
+        .addNotificationResponseReceivedListener(
+          (response) => {
+            openNotification(
+              response.notification,
+            )
+          },
+        )
+
+    return () => {
+      subscription.remove()
+    }
+  }, [])
+}
+
 export default function RootLayout() {
+  useNotificationNavigation()
+
   return (
     <SafeAreaProvider>
       <SQLiteProvider
