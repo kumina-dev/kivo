@@ -33,6 +33,21 @@ export type CombinedTemplate = {
   rewards: TemplateReward[]
 }
 
+export type TemplateReviewTask = TemplateTask & {
+  id: string
+  enabled: boolean
+}
+
+export type TemplateReviewReward = TemplateReward & {
+  id: string
+  enabled: boolean
+}
+
+export type TemplateReview = {
+  tasks: TemplateReviewTask[]
+  rewards: TemplateReviewReward[]
+}
+
 export type TemplateImportSummary = {
   tasksAdded: number
   tasksSkipped: number

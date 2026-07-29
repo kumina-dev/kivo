@@ -3,6 +3,7 @@ import type {
   CombinedTemplate,
   StarterTemplate,
   TemplateId,
+  TemplateReview,
   TemplateReward,
   TemplateTask,
 } from '@/types/template'
@@ -38,6 +39,46 @@ export function combineStarterTemplates(
         (template) => template.rewards,
       ),
     ),
+  }
+}
+
+export function createTemplateReview(
+  template: CombinedTemplate,
+): TemplateReview {
+  return {
+    tasks: template.tasks.map((task, index) => ({
+      ...task,
+      enabled: true,
+      id: `task-${index}-${normalizeTitle(task.title)}`,
+    })),
+    rewards: template.rewards.map(
+      (reward, index) => ({
+        ...reward,
+        enabled: true,
+        id: `reward-${index}-${normalizeTitle(
+          reward.title,
+        )}`,
+      }),
+    ),
+  }
+}
+
+export function getEnabledTemplateItems(
+  review: TemplateReview,
+): CombinedTemplate {
+  return {
+    tasks: review.tasks
+      .filter((task) => task.enabled)
+      .map(({ enabled: _enabled, id: _id, ...task }) => task),
+    rewards: review.rewards
+      .filter((reward) => reward.enabled)
+      .map(
+        ({
+          enabled: _enabled,
+          id: _id,
+          ...reward
+        }) => reward,
+      ),
   }
 }
 
