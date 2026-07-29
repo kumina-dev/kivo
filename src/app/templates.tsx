@@ -4,8 +4,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import { TemplateCard } from '@/components/templates/template-card'
-import { TemplateReviewItem } from '@/components/templates/template-review-item'
+import { TemplateRewardReviewItem } from '@/components/templates/template-reward-review-item'
 import { TemplateSummaryCard } from '@/components/templates/template-summary-card'
+import { TemplateTaskReviewItem } from '@/components/templates/template-task-review-item'
 import { AppText } from '@/components/ui/app-text'
 import { PrimaryButton } from '@/components/ui/primary-button'
 import { Screen } from '@/components/ui/screen'
@@ -24,6 +25,7 @@ import {
   createTemplateReview,
   getEnabledTemplateItems,
 } from '@/lib/templates'
+import type { RepeatRule } from '@/types/task'
 import type {
   CombinedTemplate,
   TemplateId,
@@ -169,8 +171,10 @@ export default function TemplatesScreen() {
   function updateTask(
     id: string,
     update: {
-      title?: string
+      description?: string
       points?: number
+      repeatRule?: RepeatRule
+      title?: string
     },
   ): void {
     setReview((current) => ({
@@ -203,8 +207,9 @@ export default function TemplatesScreen() {
   function updateReward(
     id: string,
     update: {
-      title?: string
       cost?: number
+      description?: string
+      title?: string
     },
   ): void {
     setReview((current) => ({
@@ -434,21 +439,34 @@ export default function TemplatesScreen() {
 
             <View style={styles.items}>
               {review.tasks.map((task) => (
-                <TemplateReviewItem
+                <TemplateTaskReviewItem
                   key={task.id}
+                  description={task.description}
                   enabled={task.enabled}
+                  onChangeDescription={(description) =>
+                    updateTask(task.id, {
+                      description,
+                    })
+                  }
+                  onChangePoints={(points) =>
+                    updateTask(task.id, {
+                      points,
+                    })
+                  }
+                  onChangeRepeatRule={(repeatRule) =>
+                    updateTask(task.id, {
+                      repeatRule,
+                    })
+                  }
                   onChangeTitle={(title) =>
-                    updateTask(task.id, { title })
+                    updateTask(task.id, {
+                      title,
+                    })
                   }
-                  onChangeValue={(points) =>
-                    updateTask(task.id, { points })
-                  }
-                  onToggle={() =>
-                    toggleTask(task.id)
-                  }
+                  onToggle={() => toggleTask(task.id)}
+                  points={task.points}
+                  repeatRule={task.repeatRule}
                   title={task.title}
-                  value={task.points}
-                  valueLabel="Points"
                 />
               ))}
             </View>
@@ -461,25 +479,30 @@ export default function TemplatesScreen() {
 
             <View style={styles.items}>
               {review.rewards.map((reward) => (
-                <TemplateReviewItem
+                <TemplateRewardReviewItem
                   key={reward.id}
+                  cost={reward.cost}
+                  description={reward.description}
                   enabled={reward.enabled}
+                  onChangeCost={(cost) =>
+                    updateReward(reward.id, {
+                      cost,
+                    })
+                  }
+                  onChangeDescription={(description) =>
+                    updateReward(reward.id, {
+                      description,
+                    })
+                  }
                   onChangeTitle={(title) =>
                     updateReward(reward.id, {
                       title,
-                    })
-                  }
-                  onChangeValue={(cost) =>
-                    updateReward(reward.id, {
-                      cost,
                     })
                   }
                   onToggle={() =>
                     toggleReward(reward.id)
                   }
                   title={reward.title}
-                  value={reward.cost}
-                  valueLabel="Cost"
                 />
               ))}
             </View>

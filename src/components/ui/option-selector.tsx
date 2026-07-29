@@ -9,13 +9,15 @@ type Option<T extends string> = {
 }
 
 type OptionSelectorProps<T extends string> = {
+  disabled?: boolean
   label: string
-  onChange: (value: T) => void
   options: readonly Option<T>[]
   value: T
+  onChange: (value: T) => void
 }
 
 export function OptionSelector<T extends string>({
+  disabled,
   label,
   onChange,
   options,
@@ -32,11 +34,13 @@ export function OptionSelector<T extends string>({
           return (
             <Pressable
               key={option.value}
+              disabled={disabled}
               onPress={() => onChange(option.value)}
               style={({ pressed }) => [
                 styles.option,
                 selected && styles.selectedOption,
                 pressed && styles.pressedOption,
+                disabled && styles.disabled,
               ]}
             >
               <AppText
@@ -90,5 +94,8 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: colors.text,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 })

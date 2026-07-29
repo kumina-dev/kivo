@@ -135,7 +135,7 @@ export async function importStarterTemplate(
           VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)
         `,
         task.title.trim(),
-        task.description ?? null,
+        task.description?.trim() ?? null,
         task.points,
         task.repeatRule,
         createdAt,
@@ -161,7 +161,7 @@ export async function importStarterTemplate(
           VALUES (?, ?, ?, ?, NULL, ?, ?, ?)
         `,
         reward.title.trim(),
-        reward.description ?? null,
+        reward.description?.trim() ?? null,
         reward.cost,
         createdAt,
         reward.templateId,
