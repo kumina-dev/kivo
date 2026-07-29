@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const databaseVersion = 5
+const databaseVersion = 6
 
 export async function migrateDatabase(
   db: SQLiteDatabase,
@@ -209,6 +209,50 @@ export async function migrateDatabase(
     `)
 
     currentVersion = 5
+  }
+
+  if (currentVersion === 5) {
+    await db.execAsync(`
+      ALTER TABLE tasks
+      ADD COLUMN source_template_id TEXT;
+
+      ALTER TABLE tasks
+      ADD COLUMN source_template_version INTEGER;
+
+      ALTER TABLE tasks
+      ADD COLUMN source_template_item_key TEXT;
+
+      ALTER TABLE rewards
+      ADD COLUMN source_template_id TEXT;
+
+      ALTER TABLE rewards
+      ADD COLUMN source_template_version INTEGER;
+
+      ALTER TABLE rewards
+      ADD COLUMN source_template_item_key TEXT;
+
+      CREATE UNIQUE INDEX
+        tasks_template_source_index
+      ON tasks (
+        source_template_id,
+        source_template_item_key
+      )
+      WHERE
+        source_template_id IS NOT NULL
+        AND source_template_item_key IS NOT NULL;
+
+      CREATE UNIQUE INDEX
+        rewards_template_source_index
+      ON rewards (
+        source_template_id,
+        source_template_item_key
+      )
+      WHERE
+        source_template_id IS NOT NULL
+        AND source_template_item_key IS NOT NULL;
+    `)
+
+    currentVersion = 6
   }
 
   await db.execAsync(

@@ -21,6 +21,11 @@ const taskSchema = z.object({
   ]),
   created_at: isoDateStringSchema,
   archived_at: isoDateStringSchema.nullable(),
+  source_template_id: z.string().nullable().optional(),
+  source_template_version:
+    z.number().int().positive().nullable().optional(),
+  source_template_item_key:
+    z.string().min(1).nullable().optional(),
 })
 
 const taskCompletionSchema = z.object({
@@ -37,6 +42,11 @@ const rewardSchema = z.object({
   cost: z.number().int().positive(),
   created_at: isoDateStringSchema,
   archived_at: isoDateStringSchema.nullable(),
+  source_template_id: z.string().nullable().optional(),
+  source_template_version:
+    z.number().int().positive().nullable().optional(),
+  source_template_item_key:
+    z.string().min(1).nullable().optional(),
 })
 
 const pointTransactionSchema = z

@@ -28,7 +28,10 @@ export async function createBackup(
         points,
         repeat_rule,
         created_at,
-        archived_at
+        archived_at,
+        source_template_id,
+        source_template_version,
+        source_template_item_key
       FROM tasks
       ORDER BY id ASC
     `),
@@ -50,7 +53,10 @@ export async function createBackup(
         description,
         cost,
         created_at,
-        archived_at
+        archived_at,
+        source_template_id,
+        source_template_version,
+        source_template_item_key
       FROM rewards
       ORDER BY id ASC
     `),

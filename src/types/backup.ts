@@ -6,6 +6,9 @@ export type BackupTaskRow = {
   repeat_rule: string
   created_at: string
   archived_at: string | null
+  source_template_id: string | null
+  source_template_version: number | null
+  source_template_item_key: string | null
 }
 
 export type BackupTaskCompletionRow = {
@@ -22,6 +25,9 @@ export type BackupRewardRow = {
   cost: number
   created_at: string
   archived_at: string | null
+  source_template_id: string | null
+  source_template_version: number | null
+  source_template_item_key: string | null
 }
 
 export type BackupPointTransactionRow = {

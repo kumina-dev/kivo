@@ -71,7 +71,32 @@ export async function selectBackupFile(): Promise<SelectBackupResult> {
     throw new Error('INVALID_BACKUP')
   }
 
-  const backup = validation.data
+  const backup: KivoBackup = {
+    ...validation.data,
+    data: {
+      ...validation.data.data,
+      tasks: validation.data.data.tasks.map((task) => ({
+        ...task,
+        source_template_id:
+          task.source_template_id ?? null,
+        source_template_version:
+          task.source_template_version ?? null,
+        source_template_item_key:
+          task.source_template_item_key ?? null,
+      })),
+      rewards: validation.data.data.rewards.map(
+        (reward) => ({
+          ...reward,
+          source_template_id:
+            reward.source_template_id ?? null,
+          source_template_version:
+            reward.source_template_version ?? null,
+          source_template_item_key:
+            reward.source_template_item_key ?? null,
+        }),
+      ),
+    },
+  }
 
   return {
     canceled: false,

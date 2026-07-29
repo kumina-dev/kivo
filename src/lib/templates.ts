@@ -30,13 +30,21 @@ export function combineStarterTemplates(
 
   return {
     tasks: deduplicateTasks(
-      selectedTemplates.flatMap(
-        (template) => template.tasks,
+      selectedTemplates.flatMap((template) =>
+        template.tasks.map((task) => ({
+          ...task,
+          templateId: template.id,
+          templateVersion: template.version,
+        })),
       ),
     ),
     rewards: deduplicateRewards(
-      selectedTemplates.flatMap(
-        (template) => template.rewards,
+      selectedTemplates.flatMap((template) =>
+        template.rewards.map((reward) => ({
+          ...reward,
+          templateId: template.id,
+          templateVersion: template.version,
+        })),
       ),
     ),
   }
@@ -46,20 +54,24 @@ export function createTemplateReview(
   template: CombinedTemplate,
 ): TemplateReview {
   return {
-    tasks: template.tasks.map((task, index) => ({
+    tasks: template.tasks.map((task) => ({
       ...task,
       enabled: true,
-      id: `task-${index}-${normalizeTitle(task.title)}`,
+      id: [
+        'task',
+        task.templateId,
+        task.templateItemKey,
+      ].join(':'),
     })),
-    rewards: template.rewards.map(
-      (reward, index) => ({
-        ...reward,
-        enabled: true,
-        id: `reward-${index}-${normalizeTitle(
-          reward.title,
-        )}`,
-      }),
-    ),
+    rewards: template.rewards.map((reward) => ({
+      ...reward,
+      enabled: true,
+      id: [
+        'reward',
+        reward.templateId,
+        reward.templateItemKey,
+      ].join(':'),
+    })),
   }
 }
 

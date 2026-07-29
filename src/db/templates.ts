@@ -9,21 +9,51 @@ type ExistingTitleRow = {
   title: string
 }
 
+type ExistingTemplateItemRow = {
+  source_template_id: string
+  source_template_item_key: string
+}
+
 export async function importStarterTemplate(
   db: SQLiteDatabase,
   template: CombinedTemplate,
 ): Promise<TemplateImportSummary> {
-  const [existingTaskRows, existingRewardRows] =
-    await Promise.all([
-      db.getAllAsync<ExistingTitleRow>(`
-        SELECT title
-        FROM tasks
-      `),
-      db.getAllAsync<ExistingTitleRow>(`
-        SELECT title
-        FROM rewards
-      `),
-    ])
+  const [
+    existingTaskRows,
+    existingRewardRows,
+    existingTemplateTasks,
+    existingTemplateRewards,
+  ] = await Promise.all([
+    db.getAllAsync<ExistingTitleRow>(`
+      SELECT title
+      FROM tasks
+    `),
+
+    db.getAllAsync<ExistingTitleRow>(`
+      SELECT title
+      FROM rewards
+    `),
+
+    db.getAllAsync<ExistingTemplateItemRow>(`
+      SELECT
+        source_template_id,
+        source_template_item_key
+      FROM tasks
+      WHERE
+        source_template_id IS NOT NULL
+        AND source_template_item_key IS NOT NULL
+    `),
+
+    db.getAllAsync<ExistingTemplateItemRow>(`
+      SELECT
+        source_template_id,
+        source_template_item_key
+      FROM rewards
+      WHERE
+        source_template_id IS NOT NULL
+        AND source_template_item_key IS NOT NULL
+    `),
+  ])
 
   const existingTaskTitles = new Set(
     existingTaskRows.map((row) =>
@@ -37,18 +67,52 @@ export async function importStarterTemplate(
     ),
   )
 
-  const tasksToAdd = template.tasks.filter(
-    (task) =>
-      !existingTaskTitles.has(
-        normalizeTitle(task.title),
+  const existingTaskSources = new Set(
+    existingTemplateTasks.map((row) =>
+      createSourceKey(
+        row.source_template_id,
+        row.source_template_item_key,
       ),
+    ),
   )
 
-  const rewardsToAdd = template.rewards.filter(
-    (reward) =>
-      !existingRewardTitles.has(
-        normalizeTitle(reward.title),
+  const existingRewardSources = new Set(
+    existingTemplateRewards.map((row) =>
+      createSourceKey(
+        row.source_template_id,
+        row.source_template_item_key,
       ),
+    ),
+  )
+
+  const tasksToAdd = template.tasks.filter((task) => {
+    const sourceKey = createSourceKey(
+      task.templateId,
+      task.templateItemKey,
+    )
+
+    return (
+      !existingTaskSources.has(sourceKey) &&
+      !existingTaskTitles.has(
+        normalizeTitle(task.title),
+      )
+    )
+  })
+
+  const rewardsToAdd = template.rewards.filter(
+    (reward) => {
+      const sourceKey = createSourceKey(
+        reward.templateId,
+        reward.templateItemKey,
+      )
+
+      return (
+        !existingRewardSources.has(sourceKey) &&
+        !existingRewardTitles.has(
+          normalizeTitle(reward.title),
+        )
+      )
+    },
   )
 
   const createdAt = new Date().toISOString()
@@ -63,15 +127,21 @@ export async function importStarterTemplate(
             points,
             repeat_rule,
             created_at,
-            archived_at
+            archived_at,
+            source_template_id,
+            source_template_version,
+            source_template_item_key
           )
-          VALUES (?, ?, ?, ?, ?, NULL)
+          VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)
         `,
-        task.title,
+        task.title.trim(),
         task.description ?? null,
         task.points,
         task.repeatRule,
         createdAt,
+        task.templateId,
+        task.templateVersion,
+        task.templateItemKey,
       )
     }
 
@@ -83,14 +153,20 @@ export async function importStarterTemplate(
             description,
             cost,
             created_at,
-            archived_at
+            archived_at,
+            source_template_id,
+            source_template_version,
+            source_template_item_key
           )
-          VALUES (?, ?, ?, ?, NULL)
+          VALUES (?, ?, ?, ?, NULL, ?, ?, ?)
         `,
-        reward.title,
+        reward.title.trim(),
         reward.description ?? null,
         reward.cost,
         createdAt,
+        reward.templateId,
+        reward.templateVersion,
+        reward.templateItemKey,
       )
     }
   })
@@ -103,6 +179,13 @@ export async function importStarterTemplate(
     rewardsSkipped:
       template.rewards.length - rewardsToAdd.length,
   }
+}
+
+function createSourceKey(
+  templateId: string,
+  itemKey: string,
+): string {
+  return `${templateId}:${itemKey}`
 }
 
 function normalizeTitle(title: string): string {

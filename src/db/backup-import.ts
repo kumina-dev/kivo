@@ -24,9 +24,12 @@ export async function replaceDatabaseFromBackup(
             points,
             repeat_rule,
             created_at,
-            archived_at
+            archived_at,
+            source_template_id,
+            source_template_version,
+            source_template_item_key
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         task.id,
         task.title,
@@ -35,6 +38,9 @@ export async function replaceDatabaseFromBackup(
         task.repeat_rule,
         task.created_at,
         task.archived_at,
+        task.source_template_id,
+        task.source_template_version,
+        task.source_template_item_key,
       )
     }
 
@@ -47,9 +53,12 @@ export async function replaceDatabaseFromBackup(
             description,
             cost,
             created_at,
-            archived_at
+            archived_at,
+            source_template_id,
+            source_template_version,
+            source_template_item_key
           )
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         reward.id,
         reward.title,
@@ -57,6 +66,9 @@ export async function replaceDatabaseFromBackup(
         reward.cost,
         reward.created_at,
         reward.archived_at,
+        reward.source_template_id,
+        reward.source_template_version,
+        reward.source_template_item_key,
       )
     }
 

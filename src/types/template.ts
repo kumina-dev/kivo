@@ -7,14 +7,20 @@ export type TemplateId =
   | 'household'
   | 'fitness'
 
-export type TemplateTask = {
+export type TemplateSource = {
+  templateId: TemplateId
+  templateVersion: number
+  templateItemKey: string
+}
+
+export type TemplateTask = TemplateSource & {
   title: string
   description?: string
   points: number
   repeatRule: RepeatRule
 }
 
-export type TemplateReward = {
+export type TemplateReward = TemplateSource & {
   title: string
   description?: string
   cost: number
@@ -22,10 +28,17 @@ export type TemplateReward = {
 
 export type StarterTemplate = {
   id: TemplateId
+  version: number
   name: string
   description: string
-  tasks: TemplateTask[]
-  rewards: TemplateReward[]
+  tasks: Omit<
+    TemplateTask,
+    'templateId' | 'templateVersion'
+  >[]
+  rewards: Omit<
+    TemplateReward,
+    'templateId' | 'templateVersion'
+  >[]
 }
 
 export type CombinedTemplate = {
