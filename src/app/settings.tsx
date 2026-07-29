@@ -109,9 +109,29 @@ export default function SettingsScreen() {
           onSubmit={handleAdjustment}
         />
 
-        <Card style={styles.archiveCard}>
-          <View style={styles.archiveHeader}>
-            <AppText variant="heading">Archive</AppText>
+        <Card style={styles.managementCard}>
+          <View style={styles.cardHeader}>
+            <AppText variant="heading">
+              Statistics
+            </AppText>
+
+            <AppText variant="caption">
+              Review point totals, task activity and completion
+              streaks.
+            </AppText>
+          </View>
+
+          <SecondaryButton
+            label="View statistics"
+            onPress={() => router.push('/statistics')}
+          />
+        </Card>
+
+        <Card style={styles.managementCard}>
+          <View style={styles.cardHeader}>
+            <AppText variant="heading">
+              Archive
+            </AppText>
 
             <AppText variant="caption">
               Restore tasks and rewards that were archived earlier.
@@ -160,10 +180,10 @@ const styles = StyleSheet.create({
   negativeBalance: {
     color: colors.danger,
   },
-  archiveCard: {
+  managementCard: {
     gap: spacing.xl,
   },
-  archiveHeader: {
+  cardHeader: {
     gap: spacing.sm,
   },
   infoCard: {

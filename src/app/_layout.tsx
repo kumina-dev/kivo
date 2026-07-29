@@ -93,6 +93,13 @@ export default function RootLayout() {
               title: 'Archive',
             }}
           />
+
+          <Stack.Screen
+            name="statistics"
+            options={{
+              title: 'Statistics',
+            }}
+          />
         </Stack>
       </SQLiteProvider>
     </SafeAreaProvider>
