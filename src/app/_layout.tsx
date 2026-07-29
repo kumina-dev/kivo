@@ -159,6 +159,13 @@ export default function RootLayout() {
               title: 'Achievements',
             }}
           />
+
+          <Stack.Screen
+            name="templates"
+            options={{
+              title: 'Starter templates',
+            }}
+          />
         </Stack>
 
         <AppDialog />

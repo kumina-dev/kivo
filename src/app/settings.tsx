@@ -422,6 +422,25 @@ export default function SettingsScreen() {
         <Card style={styles.managementCard}>
           <View style={styles.cardHeader}>
             <AppText variant="heading">
+              Starter templates
+            </AppText>
+
+            <AppText variant="caption">
+              Add a combined set of sensible tasks and rewards
+              for programming, focus, chores, household routines
+              and fitness.
+            </AppText>
+          </View>
+
+          <SecondaryButton
+            label="Choose templates"
+            onPress={() => router.push('/templates')}
+          />
+        </Card>
+
+        <Card style={styles.managementCard}>
+          <View style={styles.cardHeader}>
+            <AppText variant="heading">
               Achievements
             </AppText>
 
