@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native'
 
+import { BackupCard } from '@/components/settings/backup-card'
 import { DailyReminderForm } from '@/components/settings/daily-reminder-form'
 import { PointAdjustmentForm } from '@/components/settings/point-adjustment-form'
 import { AppText } from '@/components/ui/app-text'
@@ -23,6 +24,12 @@ import {
   createManualPointAdjustment,
   getPointBalance,
 } from '@/db/points'
+import { exportBackup } from '@/services/backup-export'
+import {
+  importSelectedBackup,
+  selectBackupFile,
+  type SelectedBackup,
+} from '@/services/backup-import'
 import {
   replaceDailyTaskReminder,
   requestNotificationPermission,
@@ -31,9 +38,6 @@ import type {
   DailyReminderInput,
   NotificationSettings,
 } from '@/types/notification-settings'
-
-import { BackupExportCard } from '@/components/settings/backup-export-card'
-import { exportBackup } from '@/services/backup-export'
 
 export default function SettingsScreen() {
   const db = useSQLiteContext()
@@ -45,6 +49,8 @@ export default function SettingsScreen() {
   const [savingReminder, setSavingReminder] =
     useState(false)
   const [exportingBackup, setExportingBackup] =
+    useState(false)
+  const [importingBackup, setImportingBackup] =
     useState(false)
 
   const loadBalance = useCallback(async (): Promise<void> => {
@@ -201,6 +207,159 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleImportBackup(): Promise<void> {
+    try {
+      const result = await selectBackupFile()
+
+      if (result.canceled) {
+        return
+      }
+
+      confirmBackupImport(result.selection)
+    } catch (error) {
+      console.error(error)
+
+      Alert.alert(
+        'Invalid backup',
+        getBackupImportErrorMessage(error),
+      )
+    }
+  }
+
+  function confirmBackupImport(
+    selection: SelectedBackup,
+  ): void {
+    const { summary } = selection
+
+    Alert.alert(
+      'Replace current Kivo data?',
+      [
+        `File: ${selection.fileName}`,
+        '',
+        `${summary.tasks} tasks`,
+        `${summary.taskCompletions} completions`,
+        `${summary.rewards} rewards`,
+        `${summary.pointTransactions} point transactions`,
+        '',
+        'The current data on this device will be replaced.',
+      ].join('\n'),
+      [
+        {
+          style: 'cancel',
+          text: 'Cancel',
+        },
+        {
+          style: 'destructive',
+          text: 'Replace data',
+          onPress: () => {
+            void restoreBackup(selection)
+          },
+        },
+      ],
+    )
+  }
+
+  async function restoreBackup(
+    selection: SelectedBackup,
+  ): Promise<void> {
+    try {
+      setImportingBackup(true)
+
+      if (
+        notificationSettings?.dailyReminderIdentifier
+      ) {
+        await replaceDailyTaskReminder(
+          notificationSettings.dailyReminderIdentifier,
+          {
+            enabled: false,
+            hour: notificationSettings.dailyReminderHour,
+            minute:
+              notificationSettings.dailyReminderMinute,
+          },
+        )
+      }
+
+      await importSelectedBackup(db, selection)
+
+      const importedSettings =
+        await getNotificationSettings(db)
+
+      let reminderIdentifier: string | null = null
+
+      if (importedSettings.dailyReminderEnabled) {
+        const permission =
+          await requestNotificationPermission()
+
+        if (permission === 'granted') {
+          reminderIdentifier =
+            await replaceDailyTaskReminder(null, {
+              enabled: true,
+              hour: importedSettings.dailyReminderHour,
+              minute:
+                importedSettings.dailyReminderMinute,
+            })
+        }
+      }
+
+      await updateNotificationSettings(
+        db,
+        {
+          enabled:
+            importedSettings.dailyReminderEnabled &&
+            reminderIdentifier !== null,
+          hour: importedSettings.dailyReminderHour,
+          minute: importedSettings.dailyReminderMinute,
+        },
+        reminderIdentifier,
+      )
+
+      const [nextBalance, nextSettings] =
+        await Promise.all([
+          getPointBalance(db),
+          getNotificationSettings(db),
+        ])
+
+      setBalance(nextBalance)
+      setNotificationSettings(nextSettings)
+
+      Alert.alert(
+        'Backup restored',
+        'The selected Kivo backup has replaced the local data on this device.',
+      )
+    } catch (error) {
+      console.error(error)
+
+      Alert.alert(
+        'Could not restore backup',
+        'Kivo could not replace the local data with this backup.',
+      )
+    } finally {
+      setImportingBackup(false)
+    }
+  }
+
+  function getBackupImportErrorMessage(
+    error: unknown,
+  ): string {
+    if (!(error instanceof Error)) {
+      return 'Kivo could not read the selected backup.'
+    }
+
+    switch (error.message) {
+      case 'BACKUP_TOO_LARGE':
+        return 'The selected backup is larger than 10 MB.'
+
+      case 'INVALID_JSON':
+        return 'The selected file does not contain valid JSON.'
+
+      case 'INVALID_BACKUP':
+        return 'The selected file is not a valid Kivo version 1 backup.'
+
+      default:
+        return 'Kivo could not read the selected backup.'
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.content}>
@@ -241,10 +400,14 @@ export default function SettingsScreen() {
           />
         ) : null}
 
-        <BackupExportCard
+        <BackupCard
           exporting={exportingBackup}
+          importing={importingBackup}
           onExport={() => {
             void handleExportBackup()
+          }}
+          onImport={() => {
+            void handleImportBackup()
           }}
         />
 
