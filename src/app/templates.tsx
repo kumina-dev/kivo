@@ -1,5 +1,6 @@
+import { useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import { TemplateCard } from '@/components/templates/template-card'
@@ -11,6 +12,10 @@ import { Screen } from '@/components/ui/screen'
 import { SecondaryButton } from '@/components/ui/secondary-button'
 import { starterTemplates } from '@/constants/starter-templates'
 import { spacing } from '@/constants/theme'
+import {
+  getTemplateInstallationStatuses,
+  getTemplateStatus,
+} from '@/db/template-status'
 import { importStarterTemplate } from '@/db/templates'
 import { useDialog } from '@/hooks/use-dialog'
 import {
@@ -20,6 +25,7 @@ import {
 } from '@/lib/templates'
 import type {
   TemplateId,
+  TemplateInstallationStatus,
   TemplateReview,
 } from '@/types/template'
 
@@ -44,6 +50,9 @@ export default function TemplatesScreen() {
 
   const [importing, setImporting] = useState(false)
 
+  const [installationStatuses, setInstallationStatuses] =
+    useState<TemplateInstallationStatus[]>([])
+
   const combinedTemplate = useMemo(
     () => combineStarterTemplates(selectedIds),
     [selectedIds],
@@ -55,6 +64,15 @@ export default function TemplatesScreen() {
   )
 
   function toggleTemplate(id: TemplateId): void {
+    const status = getTemplateStatus(
+      installationStatuses,
+      id,
+    )
+
+    if (status?.state === 'installed') {
+      return
+    }
+
     setSelectedIds((currentIds) =>
       currentIds.includes(id)
         ? currentIds.filter(
@@ -200,6 +218,8 @@ export default function TemplatesScreen() {
         enabledTemplate,
       )
 
+      await loadInstallationStatuses()
+
       showDialog({
         title: 'Templates added',
         message: [
@@ -236,6 +256,30 @@ export default function TemplatesScreen() {
     }
   }
 
+  const loadInstallationStatuses =
+    useCallback(async (): Promise<void> => {
+      try {
+        const statuses =
+          await getTemplateInstallationStatuses(db)
+
+        setInstallationStatuses(statuses)
+      } catch (error) {
+        console.error(error)
+
+        showDialog({
+          title: 'Could not check templates',
+          message:
+            'Kivo could not determine which starter templates are already installed.',
+        })
+      }
+    }, [db, showDialog])
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadInstallationStatuses()
+    }, [loadInstallationStatuses]),
+  )
+
   return (
     <Screen>
       {step === 'select' ? (
@@ -246,9 +290,9 @@ export default function TemplatesScreen() {
             </AppText>
 
             <AppText variant="caption">
-              Select any combination. You can review and
-              edit every suggested item before anything is
-              added.
+              Select one or more templates. Already installed items
+              are skipped, and partially installed templates add only
+              what is missing.
             </AppText>
           </View>
 
@@ -258,6 +302,10 @@ export default function TemplatesScreen() {
                 key={template.id}
                 onToggle={toggleTemplate}
                 selected={selectedIds.includes(
+                  template.id,
+                )}
+                status={getTemplateStatus(
+                  installationStatuses,
                   template.id,
                 )}
                 template={template}

@@ -67,3 +67,20 @@ export type TemplateImportSummary = {
   rewardsAdded: number
   rewardsSkipped: number
 }
+
+export type TemplateInstallationState =
+  | 'not-installed'
+  | 'partial'
+  | 'installed'
+  | 'update-available'
+
+export type TemplateInstallationStatus = {
+  templateId: TemplateId
+  state: TemplateInstallationState
+  installedVersion: number | null
+  latestVersion: number
+  installedTasks: number
+  totalTasks: number
+  installedRewards: number
+  totalRewards: number
+}
