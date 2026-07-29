@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const databaseVersion = 2
+const databaseVersion = 3
 
 export async function migrateDatabase(
   db: SQLiteDatabase,
@@ -86,6 +86,27 @@ export async function migrateDatabase(
     `)
 
     currentVersion = 2
+  }
+
+  if (currentVersion === 2) {
+    await db.execAsync(`
+      CREATE TABLE rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        cost INTEGER NOT NULL CHECK (cost > 0),
+        created_at TEXT NOT NULL,
+        archived_at TEXT
+      );
+
+      CREATE INDEX rewards_archived_at_index
+      ON rewards (archived_at);
+
+      CREATE INDEX point_transactions_reward_id_index
+      ON point_transactions (reward_id);
+    `)
+
+    currentVersion = 3
   }
 
   await db.execAsync(`PRAGMA user_version = ${currentVersion};`)

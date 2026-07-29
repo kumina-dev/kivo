@@ -56,6 +56,14 @@ export default function RootLayout() {
           />
 
           <Stack.Screen
+            name="reward-create"
+            options={{
+              presentation: 'modal',
+              title: 'Create reward',
+            }}
+          />
+
+          <Stack.Screen
             name="history"
             options={{ title: 'History' }}
           />
