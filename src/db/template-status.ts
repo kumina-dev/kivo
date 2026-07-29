@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite'
 
 import { starterTemplates } from '@/constants/starter-templates'
 import type {
+  StarterTemplate,
   TemplateId,
   TemplateInstallationStatus,
 } from '@/types/template'
@@ -13,9 +14,16 @@ type InstalledTemplateRow = {
   item_type: 'task' | 'reward'
 }
 
+type LegacyItemRow = {
+  id: number
+  title: string
+}
+
 export async function getTemplateInstallationStatuses(
   db: SQLiteDatabase,
 ): Promise<TemplateInstallationStatus[]> {
+  await reconcileLegacyTemplateSources(db)
+
   const rows = await db.getAllAsync<InstalledTemplateRow>(`
     SELECT
       source_template_id,
@@ -104,6 +112,140 @@ export async function getTemplateInstallationStatuses(
   })
 }
 
+async function reconcileLegacyTemplateSources(
+  db: SQLiteDatabase,
+): Promise<void> {
+  const [legacyTasks, legacyRewards] =
+    await Promise.all([
+      db.getAllAsync<LegacyItemRow>(`
+        SELECT id, title
+        FROM tasks
+        WHERE
+          source_template_id IS NULL
+          AND source_template_item_key IS NULL
+      `),
+
+      db.getAllAsync<LegacyItemRow>(`
+        SELECT id, title
+        FROM rewards
+        WHERE
+          source_template_id IS NULL
+          AND source_template_item_key IS NULL
+      `),
+    ])
+
+  const taskByTitle = createLegacyItemMap(legacyTasks)
+  const rewardByTitle =
+    createLegacyItemMap(legacyRewards)
+
+  await db.withTransactionAsync(async () => {
+    for (const template of starterTemplates) {
+      await reconcileTemplateTasks(
+        db,
+        template,
+        taskByTitle,
+      )
+
+      await reconcileTemplateRewards(
+        db,
+        template,
+        rewardByTitle,
+      )
+    }
+  })
+}
+
+async function reconcileTemplateTasks(
+  db: SQLiteDatabase,
+  template: StarterTemplate,
+  taskByTitle: Map<string, LegacyItemRow[]>,
+): Promise<void> {
+  for (const task of template.tasks) {
+    const matchingRows = taskByTitle.get(
+      normalizeTitle(task.title),
+    )
+
+    const matchingRow = matchingRows?.shift()
+
+    if (!matchingRow) {
+      continue
+    }
+
+    await db.runAsync(
+      `
+        UPDATE tasks
+        SET
+          source_template_id = ?,
+          source_template_version = ?,
+          source_template_item_key = ?
+        WHERE
+          id = ?
+          AND source_template_id IS NULL
+          AND source_template_item_key IS NULL
+      `,
+      template.id,
+      template.version,
+      task.templateItemKey,
+      matchingRow.id,
+    )
+  }
+}
+
+async function reconcileTemplateRewards(
+  db: SQLiteDatabase,
+  template: StarterTemplate,
+  rewardByTitle: Map<string, LegacyItemRow[]>,
+): Promise<void> {
+  for (const reward of template.rewards) {
+    const matchingRows = rewardByTitle.get(
+      normalizeTitle(reward.title),
+    )
+
+    const matchingRow = matchingRows?.shift()
+
+    if (!matchingRow) {
+      continue
+    }
+
+    await db.runAsync(
+      `
+        UPDATE rewards
+        SET
+          source_template_id = ?,
+          source_template_version = ?,
+          source_template_item_key = ?
+        WHERE
+          id = ?
+          AND source_template_id IS NULL
+          AND source_template_item_key IS NULL
+      `,
+      template.id,
+      template.version,
+      reward.templateItemKey,
+      matchingRow.id,
+    )
+  }
+}
+
+function createLegacyItemMap(
+  rows: LegacyItemRow[],
+): Map<string, LegacyItemRow[]> {
+  const result = new Map<string, LegacyItemRow[]>()
+
+  for (const row of rows) {
+    const normalizedTitle =
+      normalizeTitle(row.title)
+
+    const existingRows =
+      result.get(normalizedTitle) ?? []
+
+    existingRows.push(row)
+    result.set(normalizedTitle, existingRows)
+  }
+
+  return result
+}
+
 function getInstallationState(input: {
   installedItems: number
   totalItems: number
@@ -135,4 +277,8 @@ export function getTemplateStatus(
   return statuses.find(
     (status) => status.templateId === templateId,
   )
+}
+
+function normalizeTitle(title: string): string {
+  return title.trim().toLocaleLowerCase('en-US')
 }
