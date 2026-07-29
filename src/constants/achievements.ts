@@ -1,0 +1,103 @@
+import type { AchievementDefinition } from '@/types/achievement'
+
+export const achievementDefinitions: AchievementDefinition[] = [
+  {
+    id: 'first-step',
+    category: 'tasks',
+    description: 'Complete your first task.',
+    metric: 'task_completions',
+    target: 1,
+    title: 'First Step',
+  },
+  {
+    id: 'getting-started',
+    category: 'tasks',
+    description: 'Complete 10 tasks.',
+    metric: 'task_completions',
+    target: 10,
+    title: 'Getting Started',
+  },
+  {
+    id: 'task-machine',
+    category: 'tasks',
+    description: 'Complete 50 tasks.',
+    metric: 'task_completions',
+    target: 50,
+    title: 'Task Machine',
+  },
+  {
+    id: 'century',
+    category: 'tasks',
+    description: 'Complete 100 tasks.',
+    metric: 'task_completions',
+    target: 100,
+    title: 'Century',
+  },
+  {
+    id: 'first-hundred',
+    category: 'points',
+    description: 'Earn 100 points from task completions.',
+    metric: 'task_points_earned',
+    target: 100,
+    title: 'First Hundred',
+  },
+  {
+    id: 'point-collector',
+    category: 'points',
+    description: 'Earn 1,000 points from task completions.',
+    metric: 'task_points_earned',
+    target: 1000,
+    title: 'Point Collector',
+  },
+  {
+    id: 'point-hoarder',
+    category: 'points',
+    description: 'Earn 5,000 points from task completions.',
+    metric: 'task_points_earned',
+    target: 5000,
+    title: 'Point Hoarder',
+  },
+  {
+    id: 'treat-yourself',
+    category: 'rewards',
+    description: 'Redeem your first reward.',
+    metric: 'reward_redemptions',
+    target: 1,
+    title: 'Treat Yourself',
+  },
+  {
+    id: 'reward-regular',
+    category: 'rewards',
+    description: 'Redeem 5 rewards.',
+    metric: 'reward_redemptions',
+    target: 5,
+    title: 'Reward Regular',
+  },
+  {
+    id: 'three-day-run',
+    category: 'streaks',
+    description:
+      'Complete at least one task on three consecutive days.',
+    metric: 'longest_streak',
+    target: 3,
+    title: 'Three-Day Run',
+  },
+  {
+    id: 'full-week',
+    category: 'streaks',
+    description:
+      'Complete at least one task on seven consecutive days.',
+    metric: 'longest_streak',
+    target: 7,
+    title: 'Full Week',
+  },
+  {
+    id: 'monthly-routine',
+    category: 'streaks',
+    description:
+      'Complete at least one task on 30 consecutive days.',
+    metric: 'longest_streak',
+    target: 30,
+    title: 'Monthly Routine',
+  },
+]

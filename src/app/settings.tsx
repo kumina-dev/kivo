@@ -112,6 +112,23 @@ export default function SettingsScreen() {
         <Card style={styles.managementCard}>
           <View style={styles.cardHeader}>
             <AppText variant="heading">
+              Achievements
+            </AppText>
+
+            <AppText variant="caption">
+              Review unlocked milestones and progress toward future goals.
+            </AppText>
+          </View>
+
+          <SecondaryButton
+            label="View achievements"
+            onPress={() => router.push('/achievements')}
+          />
+        </Card>
+
+        <Card style={styles.managementCard}>
+          <View style={styles.cardHeader}>
+            <AppText variant="heading">
               Calendar
             </AppText>
 

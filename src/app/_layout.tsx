@@ -107,6 +107,13 @@ export default function RootLayout() {
               title: 'Calendar',
             }}
           />
+
+          <Stack.Screen
+            name="achievements"
+            options={{
+              title: 'Achievements',
+            }}
+          />
         </Stack>
       </SQLiteProvider>
     </SafeAreaProvider>
