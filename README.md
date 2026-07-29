@@ -1,56 +1,187 @@
-# Welcome to your Expo app 👋
+# Kivo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Kivo is a local-first productivity app that turns completed tasks into points and rewards.
 
-## Get started
+The app stores its data locally using SQLite and works without an account, subscription, or cloud connection.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- Create and manage tasks
+- Recurring tasks
+- Earn points from completed tasks
+- Create and redeem rewards
+- Point transaction history
+- Manual point adjustments
+- Statistics and activity tracking
+- Monthly calendar view
+- Achievements
+- Archived tasks and rewards
+- Daily reminders
+- JSON backup export
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+- React Native
+- Expo SDK 55
+- Expo Router
+- TypeScript
+- SQLite
+- Expo Notifications
+- Expo File System
+- Expo Sharing
 
-In the output, you'll find options to open the app in a
+## Getting started
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Requirements
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Node.js
+- pnpm
+- Android Studio and an Android emulator, or a physical Android device
 
-## Get a fresh project
-
-When you're ready, run:
+### Install dependencies
 
 ```bash
-npm run reset-project
+pnpm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Create the native project
 
-### Other setup steps
+```bash
+npx expo prebuild
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Run on Android
 
-## Learn more
+```bash
+npx expo run:android --variant debugOptimized
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+For normal TypeScript and React Native development after the development build has been installed:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx expo start --dev-client
+```
 
-## Join the community
+## Project structure
 
-Join our community of developers creating universal apps.
+```
+src/
+├── app/          Expo Router screens and layouts
+├── components/   Reusable UI and feature components
+├── constants/    Theme and shared constants
+├── db/           SQLite queries and migrations
+├── services/     Notifications, backups and other services
+├── types/        Shared TypeScript types
+└── utils/        Shared utility functions
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Data storage
+
+Kivo is local-first. Tasks, rewards, completions, point transactions, settings and other app data are stored in SQLite on the device.
+
+Backups can be exported as JSON files from the settings screen.
+
+## Status
+
+Kivo is under active development and is not yet considered production-ready.
+
+## Roadmap
+
+### Core
+
+- [x] Tasks
+- [x] Recurring tasks
+- [x] Rewards
+- [x] Point ledger
+- [x] History
+- [x] Statistics
+- [x] Calendar
+- [x] Achievements
+- [x] Daily reminders
+- [x] Backup export
+- [ ] Backup import
+- [ ] Daily streaks
+- [ ] Levels and experience
+- [ ] Weekly challenges
+- [ ] Negative-point bad habits
+- [ ] Multiple point currencies
+
+### Templates and onboarding
+
+- [ ] Multi-select starter templates
+- [ ] Combine selected templates into one personalized setup
+- [ ] Review and customize suggested tasks, rewards and point values
+- [ ] Detect duplicate or overlapping template items
+- [ ] Template-based bad habits and weekly challenges
+- [ ] Add and apply templates later from settings
+- [ ] Share templates through QR codes
+- [ ] Community-created templates
+
+### Data and portability
+
+- [ ] CSV export
+- [ ] QR backup export
+- [ ] QR backup import
+- [ ] Encrypted backups
+- [ ] Backup validation and version migrations
+
+### User experience
+
+- [ ] Replace system alerts and dialogs with Kivo-themed components
+- [ ] Kivo-themed confirmation dialogs
+- [ ] Kivo-themed date and time selection
+- [ ] Custom bottom sheets and modals
+- [ ] Improved empty, loading and error states
+- [ ] Themes and appearance customization
+- [ ] Improved charts and data visualizations
+- [ ] Animations and interaction polish
+- [ ] Accessibility improvements
+- [ ] Home screen widgets
+
+### Shared households
+
+- [ ] Family and shared households
+- [ ] Shared tasks
+- [ ] Shared rewards
+- [ ] Shared challenges
+- [ ] Household roles and permissions
+- [ ] Conflict-safe shared activity history
+
+### Cloud and devices
+
+- [ ] Optional accounts
+- [ ] Optional cloud sync
+- [ ] Device linking
+- [ ] Offline conflict resolution
+- [ ] Account-free local mode remains fully supported
+
+### Architecture and engineering
+
+- [ ] Refine shared architecture
+- [ ] Extract reusable hooks
+- [ ] Extract reusable layout components
+- [ ] Consolidate theme modules
+- [ ] Add schema validation with Zod
+- [ ] Add focused UI state management with Zustand
+- [ ] Adopt FlashList where large lists benefit from it
+- [ ] Add Reanimated for interaction and transition polish
+- [ ] Evaluate Skia for custom visual effects and charts
+- [ ] Adopt a chart solution such as Victory Native XL
+- [ ] Automated database tests
+- [ ] Automated component tests
+- [ ] Automated integration tests
+- [ ] GitHub Actions CI
+- [ ] Performance profiling and optimization
+
+### Distribution
+
+- [ ] Android release builds
+- [ ] iOS release builds
+- [ ] Internal testing releases
+- [ ] Store-ready screenshots and metadata
+- [ ] Privacy policy and data documentation
+- [ ] First public release
+
+## License
+
+This project is licensed under the MIT License.
