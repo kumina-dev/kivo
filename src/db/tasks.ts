@@ -16,10 +16,6 @@ type TaskRow = {
   archived_at: string | null
 }
 
-type AvailableTaskRow = TaskRow & {
-  completion_id: number | null
-}
-
 function mapTask(row: TaskRow): Task {
   return {
     id: row.id,
@@ -55,6 +51,29 @@ export async function createTask(
   )
 
   return result.lastInsertRowId
+}
+
+export async function getTaskById(
+  db: SQLiteDatabase,
+  taskId: number,
+): Promise<Task | null> {
+  const row = await db.getFirstAsync<TaskRow>(
+    `
+      SELECT
+        id,
+        title,
+        description,
+        points,
+        repeat_rule,
+        created_at,
+        archived_at
+      FROM tasks
+      WHERE id = ?
+    `,
+    taskId,
+  )
+
+  return row ? mapTask(row) : null
 }
 
 export async function getActiveTasks(
@@ -111,6 +130,30 @@ export async function getAvailableTasks(
 
   return availableTasks.filter(
     (task): task is Task => task !== null,
+  )
+}
+
+export async function updateTask(
+  db: SQLiteDatabase,
+  taskId: number,
+  input: CreateTaskInput,
+): Promise<void> {
+  await db.runAsync(
+    `
+      UPDATE tasks
+      SET
+        title = ?,
+        description = ?,
+        points = ?,
+        repeat_rule = ?
+      WHERE id = ?
+        AND archived_at IS NULL
+    `,
+    input.title.trim(),
+    input.description?.trim() || null,
+    input.points,
+    input.repeatRule,
+    taskId,
   )
 }
 
@@ -174,6 +217,7 @@ export async function archiveTask(
       UPDATE tasks
       SET archived_at = ?
       WHERE id = ?
+        AND archived_at IS NULL
     `,
     new Date().toISOString(),
     taskId,

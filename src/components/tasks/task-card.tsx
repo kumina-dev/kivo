@@ -9,6 +9,7 @@ import type { RepeatRule, Task } from '@/types/task'
 type TaskCardProps = {
   completing?: boolean
   onComplete?: (task: Task) => Promise<void>
+  onEdit?: (task: Task) => void
   task: Task
 }
 
@@ -23,6 +24,7 @@ const repeatLabels: Record<RepeatRule, string> = {
 export function TaskCard({
   completing = false,
   onComplete,
+  onEdit,
   task,
 }: TaskCardProps) {
   async function handleComplete(): Promise<void> {
@@ -31,6 +33,7 @@ export function TaskCard({
     }
 
     await onComplete(task)
+
     await Haptics.notificationAsync(
       Haptics.NotificationFeedbackType.Success,
     )
@@ -58,22 +61,38 @@ export function TaskCard({
         <AppText variant="caption">{task.description}</AppText>
       ) : null}
 
-      {onComplete ? (
-        <Pressable
-          disabled={completing}
-          onPress={() => {
-            void handleComplete()
-          }}
-          style={({ pressed }) => [
-            styles.completeButton,
-            pressed && styles.completeButtonPressed,
-            completing && styles.completeButtonDisabled,
-          ]}
-        >
-          <AppText style={styles.completeButtonText}>
-            {completing ? 'Completing…' : 'Complete'}
-          </AppText>
-        </Pressable>
+      {onComplete || onEdit ? (
+        <View style={styles.actions}>
+          {onEdit ? (
+            <Pressable
+              onPress={() => onEdit(task)}
+              style={({ pressed }) => [
+                styles.editButton,
+                pressed && styles.editButtonPressed,
+              ]}
+            >
+              <AppText style={styles.editButtonText}>Edit</AppText>
+            </Pressable>
+          ) : null}
+
+          {onComplete ? (
+            <Pressable
+              disabled={completing}
+              onPress={() => {
+                void handleComplete()
+              }}
+              style={({ pressed }) => [
+                styles.completeButton,
+                pressed && styles.completeButtonPressed,
+                completing && styles.completeButtonDisabled,
+              ]}
+            >
+              <AppText style={styles.completeButtonText}>
+                {completing ? 'Completing…' : 'Complete'}
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
     </Card>
   )
@@ -108,10 +127,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  editButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  editButtonPressed: {
+    opacity: 0.75,
+  },
+  editButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   completeButton: {
     alignItems: 'center',
     backgroundColor: colors.accent,
     borderRadius: radius.md,
+    flex: 1,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: spacing.md,

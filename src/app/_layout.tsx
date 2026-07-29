@@ -51,6 +51,13 @@ export default function RootLayout() {
           />
 
           <Stack.Screen
+            name="task/[id]"
+            options={{
+              title: 'Edit task',
+            }}
+          />
+
+          <Stack.Screen
             name="rewards"
             options={{ title: 'Rewards' }}
           />
