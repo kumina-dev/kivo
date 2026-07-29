@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const databaseVersion = 3
+const databaseVersion = 4
 
 export async function migrateDatabase(
   db: SQLiteDatabase,
@@ -68,7 +68,12 @@ export async function migrateDatabase(
       CREATE TABLE point_transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL
-          CHECK (type IN ('task_completion', 'reward_redemption')),
+          CHECK (
+            type IN (
+              'task_completion',
+              'reward_redemption'
+            )
+          ),
         amount INTEGER NOT NULL,
         task_id INTEGER,
         reward_id INTEGER,
@@ -107,6 +112,70 @@ export async function migrateDatabase(
     `)
 
     currentVersion = 3
+  }
+
+  if (currentVersion === 3) {
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE point_transactions_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL
+            CHECK (
+              type IN (
+                'task_completion',
+                'reward_redemption',
+                'manual_adjustment'
+              )
+            ),
+          amount INTEGER NOT NULL,
+          task_id INTEGER,
+          reward_id INTEGER,
+          note TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (task_id)
+            REFERENCES tasks (id)
+            ON DELETE SET NULL,
+          FOREIGN KEY (reward_id)
+            REFERENCES rewards (id)
+            ON DELETE SET NULL
+        );
+
+        INSERT INTO point_transactions_new (
+          id,
+          type,
+          amount,
+          task_id,
+          reward_id,
+          note,
+          created_at
+        )
+        SELECT
+          id,
+          type,
+          amount,
+          task_id,
+          reward_id,
+          NULL,
+          created_at
+        FROM point_transactions;
+
+        DROP TABLE point_transactions;
+
+        ALTER TABLE point_transactions_new
+        RENAME TO point_transactions;
+
+        CREATE INDEX point_transactions_created_at_index
+        ON point_transactions (created_at);
+
+        CREATE INDEX point_transactions_task_id_index
+        ON point_transactions (task_id);
+
+        CREATE INDEX point_transactions_reward_id_index
+        ON point_transactions (reward_id);
+      `)
+    })
+
+    currentVersion = 4
   }
 
   await db.execAsync(`PRAGMA user_version = ${currentVersion};`)

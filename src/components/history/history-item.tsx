@@ -8,8 +8,25 @@ type HistoryItemProps = {
   entry: HistoryEntry
 }
 
-export function HistoryItem({ entry }: HistoryItemProps) {
-  const earned = entry.amount > 0
+function getEntryDescription(entry: HistoryEntry): string {
+  switch (entry.type) {
+    case 'task_completion':
+      return 'Task completed'
+
+    case 'reward_redemption':
+      return 'Reward redeemed'
+
+    case 'manual_adjustment':
+      return entry.amount > 0
+        ? 'Points added manually'
+        : 'Points removed manually'
+  }
+}
+
+export function HistoryItem({
+  entry,
+}: HistoryItemProps) {
+  const positive = entry.amount > 0
 
   const time = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
@@ -21,34 +38,40 @@ export function HistoryItem({ entry }: HistoryItemProps) {
       <View
         style={[
           styles.icon,
-          earned ? styles.earnedIcon : styles.spentIcon,
+          positive ? styles.positiveIcon : styles.negativeIcon,
         ]}
       >
         <AppText
           style={[
             styles.iconText,
-            earned ? styles.earnedText : styles.spentText,
+            positive
+              ? styles.positiveText
+              : styles.negativeText,
           ]}
         >
-          {earned ? '+' : '−'}
+          {positive ? '+' : '−'}
         </AppText>
       </View>
 
       <View style={styles.content}>
-        <AppText style={styles.title}>{entry.title}</AppText>
+        <AppText style={styles.title}>
+          {entry.title}
+        </AppText>
 
         <AppText variant="caption">
-          {earned ? 'Task completed' : 'Reward redeemed'} · {time}
+          {getEntryDescription(entry)} · {time}
         </AppText>
       </View>
 
       <AppText
         style={[
           styles.amount,
-          earned ? styles.earnedText : styles.spentText,
+          positive
+            ? styles.positiveText
+            : styles.negativeText,
         ]}
       >
-        {earned ? '+' : ''}
+        {positive ? '+' : ''}
         {entry.amount.toLocaleString('en-US')}
       </AppText>
     </View>
@@ -68,10 +91,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 40,
   },
-  earnedIcon: {
+  positiveIcon: {
     backgroundColor: 'rgba(111, 214, 157, 0.12)',
   },
-  spentIcon: {
+  negativeIcon: {
     backgroundColor: 'rgba(239, 123, 131, 0.12)',
   },
   iconText: {
@@ -91,10 +114,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  earnedText: {
+  positiveText: {
     color: colors.success,
   },
-  spentText: {
+  negativeText: {
     color: colors.danger,
   },
 })

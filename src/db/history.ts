@@ -13,16 +13,29 @@ type HistoryEntryRow = {
   created_at: string
 }
 
-function mapHistoryEntry(row: HistoryEntryRow): HistoryEntry {
+function getFallbackTitle(
+  type: HistoryEntryType,
+): string {
+  switch (type) {
+    case 'task_completion':
+      return 'Archived task'
+
+    case 'reward_redemption':
+      return 'Archived reward'
+
+    case 'manual_adjustment':
+      return 'Manual adjustment'
+  }
+}
+
+function mapHistoryEntry(
+  row: HistoryEntryRow,
+): HistoryEntry {
   return {
     id: row.id,
     type: row.type,
     amount: row.amount,
-    title:
-      row.title ??
-      (row.type === 'task_completion'
-        ? 'Deleted task'
-        : 'Deleted reward'),
+    title: row.title ?? getFallbackTitle(row.type),
     createdAt: row.created_at,
   }
 }
@@ -41,6 +54,8 @@ export async function getHistoryEntries(
           THEN tasks.title
         WHEN point_transactions.type = 'reward_redemption'
           THEN rewards.title
+        WHEN point_transactions.type = 'manual_adjustment'
+          THEN point_transactions.note
         ELSE NULL
       END AS title
     FROM point_transactions
@@ -48,7 +63,9 @@ export async function getHistoryEntries(
       ON tasks.id = point_transactions.task_id
     LEFT JOIN rewards
       ON rewards.id = point_transactions.reward_id
-    ORDER BY point_transactions.created_at DESC
+    ORDER BY
+      point_transactions.created_at DESC,
+      point_transactions.id DESC
   `)
 
   return rows.map(mapHistoryEntry)
