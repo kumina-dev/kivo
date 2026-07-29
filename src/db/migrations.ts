@@ -1,8 +1,10 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const databaseVersion = 1
+const databaseVersion = 2
 
-export async function migrateDatabase(db: SQLiteDatabase) {
+export async function migrateDatabase(
+  db: SQLiteDatabase,
+): Promise<void> {
   await db.execAsync('PRAGMA journal_mode = WAL;')
   await db.execAsync('PRAGMA foreign_keys = ON;')
 
@@ -42,6 +44,48 @@ export async function migrateDatabase(db: SQLiteDatabase) {
     `)
 
     currentVersion = 1
+  }
+
+  if (currentVersion === 1) {
+    await db.execAsync(`
+      CREATE TABLE task_completions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        completion_period TEXT NOT NULL,
+        completed_at TEXT NOT NULL,
+        FOREIGN KEY (task_id)
+          REFERENCES tasks (id)
+          ON DELETE CASCADE,
+        UNIQUE (task_id, completion_period)
+      );
+
+      CREATE INDEX task_completions_task_id_index
+      ON task_completions (task_id);
+
+      CREATE INDEX task_completions_completed_at_index
+      ON task_completions (completed_at);
+
+      CREATE TABLE point_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL
+          CHECK (type IN ('task_completion', 'reward_redemption')),
+        amount INTEGER NOT NULL,
+        task_id INTEGER,
+        reward_id INTEGER,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (task_id)
+          REFERENCES tasks (id)
+          ON DELETE SET NULL
+      );
+
+      CREATE INDEX point_transactions_created_at_index
+      ON point_transactions (created_at);
+
+      CREATE INDEX point_transactions_task_id_index
+      ON point_transactions (task_id);
+    `)
+
+    currentVersion = 2
   }
 
   await db.execAsync(`PRAGMA user_version = ${currentVersion};`)

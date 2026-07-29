@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native'
+import * as Haptics from 'expo-haptics'
+import { Pressable, StyleSheet, View } from 'react-native'
 
 import { AppText } from '@/components/ui/app-text'
 import { Card } from '@/components/ui/card'
@@ -6,6 +7,8 @@ import { colors, radius, spacing } from '@/constants/theme'
 import type { RepeatRule, Task } from '@/types/task'
 
 type TaskCardProps = {
+  completing?: boolean
+  onComplete?: (task: Task) => Promise<void>
   task: Task
 }
 
@@ -17,7 +20,22 @@ const repeatLabels: Record<RepeatRule, string> = {
   monthly: 'Monthly',
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({
+  completing = false,
+  onComplete,
+  task,
+}: TaskCardProps) {
+  async function handleComplete(): Promise<void> {
+    if (!onComplete || completing) {
+      return
+    }
+
+    await onComplete(task)
+    await Haptics.notificationAsync(
+      Haptics.NotificationFeedbackType.Success,
+    )
+  }
+
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
@@ -38,6 +56,24 @@ export function TaskCard({ task }: TaskCardProps) {
 
       {task.description ? (
         <AppText variant="caption">{task.description}</AppText>
+      ) : null}
+
+      {onComplete ? (
+        <Pressable
+          disabled={completing}
+          onPress={() => {
+            void handleComplete()
+          }}
+          style={({ pressed }) => [
+            styles.completeButton,
+            pressed && styles.completeButtonPressed,
+            completing && styles.completeButtonDisabled,
+          ]}
+        >
+          <AppText style={styles.completeButtonText}>
+            {completing ? 'Completing…' : 'Complete'}
+          </AppText>
+        </Pressable>
       ) : null}
     </Card>
   )
@@ -71,5 +107,24 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 14,
     fontWeight: '700',
+  },
+  completeButton: {
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  completeButtonPressed: {
+    backgroundColor: colors.accentPressed,
+  },
+  completeButtonDisabled: {
+    opacity: 0.5,
+  },
+  completeButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 })

@@ -1,6 +1,10 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
 import type { CreateTaskInput, RepeatRule, Task } from '@/types/task'
+import {
+  getCompletionPeriod,
+  isTaskAvailableToday,
+} from '@/utils/date'
 
 type TaskRow = {
   id: number
@@ -10,6 +14,10 @@ type TaskRow = {
   repeat_rule: RepeatRule
   created_at: string
   archived_at: string | null
+}
+
+type AvailableTaskRow = TaskRow & {
+  completion_id: number | null
 }
 
 function mapTask(row: TaskRow): Task {
@@ -67,6 +75,94 @@ export async function getActiveTasks(
   `)
 
   return rows.map(mapTask)
+}
+
+export async function getAvailableTasks(
+  db: SQLiteDatabase,
+  date = new Date(),
+): Promise<Task[]> {
+  const tasks = await getActiveTasks(db)
+
+  const eligibleTasks = tasks.filter((task) =>
+    isTaskAvailableToday(task.repeatRule, date),
+  )
+
+  const availableTasks = await Promise.all(
+    eligibleTasks.map(async (task) => {
+      const completionPeriod = getCompletionPeriod(
+        task.repeatRule,
+        date,
+      )
+
+      const completion = await db.getFirstAsync<{ id: number }>(
+        `
+          SELECT id
+          FROM task_completions
+          WHERE task_id = ?
+            AND completion_period = ?
+        `,
+        task.id,
+        completionPeriod,
+      )
+
+      return completion ? null : task
+    }),
+  )
+
+  return availableTasks.filter(
+    (task): task is Task => task !== null,
+  )
+}
+
+export async function completeTask(
+  db: SQLiteDatabase,
+  task: Task,
+): Promise<void> {
+  const completedAt = new Date().toISOString()
+  const completionPeriod = getCompletionPeriod(task.repeatRule)
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `
+        INSERT INTO task_completions (
+          task_id,
+          completion_period,
+          completed_at
+        )
+        VALUES (?, ?, ?)
+      `,
+      task.id,
+      completionPeriod,
+      completedAt,
+    )
+
+    await db.runAsync(
+      `
+        INSERT INTO point_transactions (
+          type,
+          amount,
+          task_id,
+          created_at
+        )
+        VALUES ('task_completion', ?, ?, ?)
+      `,
+      task.points,
+      task.id,
+      completedAt,
+    )
+
+    if (task.repeatRule === 'none') {
+      await db.runAsync(
+        `
+          UPDATE tasks
+          SET archived_at = ?
+          WHERE id = ?
+        `,
+        completedAt,
+        task.id,
+      )
+    }
+  })
 }
 
 export async function archiveTask(
