@@ -99,7 +99,9 @@ Kivo is under active development and is not yet considered production-ready.
 - [x] Achievements
 - [x] Daily reminders
 - [x] Backup export
-- [ ] Backup import
+- [x] Backup import
+- [x] Archived tasks and rewards
+- [x] Permanent deletion from archive
 - [ ] Daily streaks
 - [ ] Levels and experience
 - [ ] Weekly challenges
@@ -108,29 +110,37 @@ Kivo is under active development and is not yet considered production-ready.
 
 ### Templates and onboarding
 
-- [ ] Multi-select starter templates
-- [ ] Combine selected templates into one personalized setup
-- [ ] Review and customize suggested tasks, rewards and point values
-- [ ] Detect duplicate or overlapping template items
+- [x] Multi-select starter templates
+- [x] Combine selected templates into one personalized setup
+- [x] Review and customize suggested tasks and rewards
+- [x] Edit titles, descriptions, repeat rules and point values
+- [x] Detect duplicate and overlapping template items
+- [x] Track template installation status
+- [x] Reconcile legacy imported template metadata
+- [x] Add only missing items from partially installed templates
+- [x] Add and apply templates later from settings
 - [ ] Template-based bad habits and weekly challenges
-- [ ] Add and apply templates later from settings
 - [ ] Share templates through QR codes
 - [ ] Community-created templates
 
 ### Data and portability
 
+- [x] Versioned JSON backup format
+- [x] Backup import preview and validation
 - [ ] CSV export
 - [ ] QR backup export
 - [ ] QR backup import
 - [ ] Encrypted backups
-- [ ] Backup validation and version migrations
+- [ ] Extended backup migration support
 
 ### User experience
 
-- [ ] Replace system alerts and dialogs with Kivo-themed components
-- [ ] Kivo-themed confirmation dialogs
+- [x] Replace system alerts with Kivo-themed dialogs
+- [x] Kivo-themed confirmation dialogs
+- [x] Improved archive management
+- [x] Starter-template review flow
 - [ ] Kivo-themed date and time selection
-- [ ] Custom bottom sheets and modals
+- [ ] Custom bottom sheets
 - [ ] Improved empty, loading and error states
 - [ ] Themes and appearance customization
 - [ ] Improved charts and data visualizations
@@ -157,12 +167,15 @@ Kivo is under active development and is not yet considered production-ready.
 
 ### Architecture and engineering
 
+- [x] SQLite migrations
+- [x] Focused UI state management with Zustand
+- [x] Reusable dialog system
+- [x] Reusable UI components
 - [ ] Refine shared architecture
 - [ ] Extract reusable hooks
 - [ ] Extract reusable layout components
 - [ ] Consolidate theme modules
 - [ ] Add schema validation with Zod
-- [ ] Add focused UI state management with Zustand
 - [ ] Adopt FlashList where large lists benefit from it
 - [ ] Add Reanimated for interaction and transition polish
 - [ ] Evaluate Skia for custom visual effects and charts
