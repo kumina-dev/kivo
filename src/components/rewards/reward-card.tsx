@@ -7,13 +7,15 @@ import type { Reward } from '@/types/reward'
 
 type RewardCardProps = {
   balance: number
-  onRedeem: (reward: Reward) => void
+  onEdit?: (reward: Reward) => void
+  onRedeem?: (reward: Reward) => void
   redeeming?: boolean
   reward: Reward
 }
 
 export function RewardCard({
   balance,
+  onEdit,
   onRedeem,
   redeeming = false,
   reward,
@@ -41,31 +43,55 @@ export function RewardCard({
         </View>
       </View>
 
-      <Pressable
-        disabled={!affordable || redeeming}
-        onPress={() => onRedeem(reward)}
-        style={({ pressed }) => [
-          styles.button,
-          affordable
-            ? styles.buttonAvailable
-            : styles.buttonUnavailable,
-          pressed && affordable && styles.buttonPressed,
-          redeeming && styles.buttonDisabled,
-        ]}
-      >
-        <AppText
-          style={[
-            styles.buttonText,
-            !affordable && styles.unavailableText,
-          ]}
-        >
-          {redeeming
-            ? 'Redeeming…'
-            : affordable
-              ? 'Redeem reward'
-              : `${missingPoints.toLocaleString('en-US')} points needed`}
-        </AppText>
-      </Pressable>
+      {onEdit || onRedeem ? (
+        <View style={styles.actions}>
+          {onEdit ? (
+            <Pressable
+              disabled={redeeming}
+              onPress={() => onEdit(reward)}
+              style={({ pressed }) => [
+                styles.editButton,
+                pressed && styles.editButtonPressed,
+                redeeming && styles.disabled,
+              ]}
+            >
+              <AppText style={styles.editButtonText}>
+                Edit
+              </AppText>
+            </Pressable>
+          ) : null}
+
+          {onRedeem ? (
+            <Pressable
+              disabled={!affordable || redeeming}
+              onPress={() => onRedeem(reward)}
+              style={({ pressed }) => [
+                styles.redeemButton,
+                affordable
+                  ? styles.redeemButtonAvailable
+                  : styles.redeemButtonUnavailable,
+                pressed &&
+                  affordable &&
+                  styles.redeemButtonPressed,
+                redeeming && styles.disabled,
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.redeemButtonText,
+                  !affordable && styles.unavailableText,
+                ]}
+              >
+                {redeeming
+                  ? 'Redeeming…'
+                  : affordable
+                    ? 'Redeem'
+                    : `${missingPoints.toLocaleString('en-US')} needed`}
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
     </Card>
   )
 }
@@ -99,31 +125,55 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  button: {
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  editButton: {
     alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
     borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: spacing.md,
   },
-  buttonAvailable: {
+  editButtonPressed: {
+    opacity: 0.75,
+  },
+  editButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  redeemButton: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  redeemButtonAvailable: {
     backgroundColor: colors.accent,
   },
-  buttonUnavailable: {
+  redeemButtonUnavailable: {
     backgroundColor: colors.surfaceRaised,
   },
-  buttonPressed: {
+  redeemButtonPressed: {
     backgroundColor: colors.accentPressed,
   },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
+  redeemButtonText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
   },
   unavailableText: {
     color: colors.textMuted,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 })

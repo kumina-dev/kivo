@@ -47,10 +47,11 @@ export default function RewardsScreen() {
 
       async function load(): Promise<void> {
         try {
-          const [nextRewards, nextBalance] = await Promise.all([
-            getActiveRewards(db),
-            getPointBalance(db),
-          ])
+          const [nextRewards, nextBalance] =
+            await Promise.all([
+              getActiveRewards(db),
+              getPointBalance(db),
+            ])
 
           if (active) {
             setRewards(nextRewards)
@@ -73,6 +74,15 @@ export default function RewardsScreen() {
     }, [db]),
   )
 
+  function handleEdit(reward: Reward): void {
+    router.push({
+      pathname: '/reward/[id]',
+      params: {
+        id: String(reward.id),
+      },
+    })
+  }
+
   function handleRedeem(reward: Reward): void {
     Alert.alert(
       'Redeem reward?',
@@ -92,7 +102,6 @@ export default function RewardsScreen() {
     )
   }
 
-
   async function confirmRedemption(
     reward: Reward,
   ): Promise<void> {
@@ -108,16 +117,25 @@ export default function RewardsScreen() {
     } catch (error) {
       console.error(error)
 
-      if (
-        error instanceof Error &&
-        error.message === 'INSUFFICIENT_POINTS'
-      ) {
-        Alert.alert(
-          'Not enough points',
-          'Your balance is lower than this reward’s cost.',
-        )
+      if (error instanceof Error) {
+        if (error.message === 'INSUFFICIENT_POINTS') {
+          Alert.alert(
+            'Not enough points',
+            'Your balance is lower than this reward’s cost.',
+          )
 
-        return
+          return
+        }
+
+        if (error.message === 'REWARD_NOT_AVAILABLE') {
+          Alert.alert(
+            'Reward unavailable',
+            'This reward has already been archived.',
+          )
+
+          await loadRewards()
+          return
+        }
       }
 
       Alert.alert(
@@ -143,7 +161,9 @@ export default function RewardsScreen() {
     <Screen>
       <View style={styles.content}>
         <Card style={styles.balanceCard}>
-          <AppText variant="caption">Available balance</AppText>
+          <AppText variant="caption">
+            Available balance
+          </AppText>
 
           <AppText style={styles.balance}>
             {balance.toLocaleString('en-US')} PTS
@@ -157,11 +177,13 @@ export default function RewardsScreen() {
 
         {rewards.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <AppText variant="heading">No rewards yet</AppText>
+            <AppText variant="heading">
+              No rewards yet
+            </AppText>
 
             <AppText variant="caption">
-              Add something worth earning. Preferably not another
-              productivity subscription.
+              Add something worth earning. Otherwise the points are
+              merely decorative integers.
             </AppText>
           </Card>
         ) : (
@@ -171,7 +193,9 @@ export default function RewardsScreen() {
 
               <AppText variant="caption">
                 {rewards.length}{' '}
-                {rewards.length === 1 ? 'reward' : 'rewards'}
+                {rewards.length === 1
+                  ? 'reward'
+                  : 'rewards'}
               </AppText>
             </View>
 
@@ -179,8 +203,11 @@ export default function RewardsScreen() {
               <RewardCard
                 balance={balance}
                 key={reward.id}
+                onEdit={handleEdit}
                 onRedeem={handleRedeem}
-                redeeming={redeemingRewardId === reward.id}
+                redeeming={
+                  redeemingRewardId === reward.id
+                }
                 reward={reward}
               />
             ))}

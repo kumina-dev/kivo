@@ -48,6 +48,28 @@ export async function createReward(
   return result.lastInsertRowId
 }
 
+export async function getRewardById(
+  db: SQLiteDatabase,
+  rewardId: number,
+): Promise<Reward | null> {
+  const row = await db.getFirstAsync<RewardRow>(
+    `
+      SELECT
+        id,
+        title,
+        description,
+        cost,
+        created_at,
+        archived_at
+      FROM rewards
+      WHERE id = ?
+    `,
+    rewardId,
+  )
+
+  return row ? mapReward(row) : null
+}
+
 export async function getActiveRewards(
   db: SQLiteDatabase,
 ): Promise<Reward[]> {
@@ -67,11 +89,50 @@ export async function getActiveRewards(
   return rows.map(mapReward)
 }
 
+export async function updateReward(
+  db: SQLiteDatabase,
+  rewardId: number,
+  input: CreateRewardInput,
+): Promise<void> {
+  await db.runAsync(
+    `
+      UPDATE rewards
+      SET
+        title = ?,
+        description = ?,
+        cost = ?
+      WHERE id = ?
+        AND archived_at IS NULL
+    `,
+    input.title.trim(),
+    input.description?.trim() || null,
+    input.cost,
+    rewardId,
+  )
+}
+
 export async function redeemReward(
   db: SQLiteDatabase,
   reward: Reward,
 ): Promise<void> {
   await db.withTransactionAsync(async () => {
+    const activeReward = await db.getFirstAsync<{
+      id: number
+      cost: number
+    }>(
+      `
+        SELECT id, cost
+        FROM rewards
+        WHERE id = ?
+          AND archived_at IS NULL
+      `,
+      reward.id,
+    )
+
+    if (!activeReward) {
+      throw new Error('REWARD_NOT_AVAILABLE')
+    }
+
     const balanceResult = await db.getFirstAsync<{
       balance: number
     }>(`
@@ -81,7 +142,7 @@ export async function redeemReward(
 
     const balance = balanceResult?.balance ?? 0
 
-    if (balance < reward.cost) {
+    if (balance < activeReward.cost) {
       throw new Error('INSUFFICIENT_POINTS')
     }
 
@@ -95,8 +156,8 @@ export async function redeemReward(
         )
         VALUES ('reward_redemption', ?, ?, ?)
       `,
-      -reward.cost,
-      reward.id,
+      -activeReward.cost,
+      activeReward.id,
       new Date().toISOString(),
     )
   })
@@ -111,6 +172,7 @@ export async function archiveReward(
       UPDATE rewards
       SET archived_at = ?
       WHERE id = ?
+        AND archived_at IS NULL
     `,
     new Date().toISOString(),
     rewardId,

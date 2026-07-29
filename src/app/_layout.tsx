@@ -71,6 +71,13 @@ export default function RootLayout() {
           />
 
           <Stack.Screen
+            name="reward/[id]"
+            options={{
+              title: 'Edit reward',
+            }}
+          />
+
+          <Stack.Screen
             name="history"
             options={{ title: 'History' }}
           />
