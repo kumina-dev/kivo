@@ -2,65 +2,74 @@ import type { SQLiteDatabase } from 'expo-sqlite'
 
 import { getLocalDateKey } from '@/utils/date'
 
-type CompletionRow = {
-  completed_at: string
+type CompletionDateRow = {
+  completion_date: string
 }
 
 export type StreakStats = {
-  currentStreak: number
-  bestStreak: number
   activeToday: boolean
+  bestStreak: number
+  currentStreak: number
   lastActiveDate: string | null
 }
 
 export async function getStreakStats(
   db: SQLiteDatabase,
-  now = new Date(),
+  today = new Date(),
 ): Promise<StreakStats> {
-  const rows = await db.getAllAsync<CompletionRow>(`
-    SELECT completed_at
+  const rows = await db.getAllAsync<CompletionDateRow>(`
+    SELECT DISTINCT
+      date(completed_at, 'localtime') AS completion_date
     FROM task_completions
-    ORDER BY completed_at ASC
+    ORDER BY completion_date ASC
   `)
 
-  const activeDateKeys = Array.from(
-    new Set(
-      rows.map((row) =>
-        getLocalDateKey(new Date(row.completed_at)),
-      ),
-    ),
+  return calculateStreakStats(
+    rows.map((row) => row.completion_date),
+    today,
+  )
+}
+
+export function calculateStreakStats(
+  completionDates: string[],
+  today = new Date(),
+): StreakStats {
+  const uniqueDates = Array.from(
+    new Set(completionDates),
   ).sort()
 
-  if (activeDateKeys.length === 0) {
+  if (uniqueDates.length === 0) {
     return {
-      currentStreak: 0,
-      bestStreak: 0,
       activeToday: false,
+      bestStreak: 0,
+      currentStreak: 0,
       lastActiveDate: null,
     }
   }
 
   const bestStreak =
-    calculateLongestStreak(activeDateKeys)
+    calculateLongestStreak(uniqueDates)
 
-  const todayKey = getLocalDateKey(now)
+  const todayKey = getLocalDateKey(today)
   const yesterdayKey = getLocalDateKey(
-    addLocalDays(now, -1),
+    addLocalDays(today, -1),
   )
 
   const lastActiveDate =
-    activeDateKeys[activeDateKeys.length - 1]
+    uniqueDates[uniqueDates.length - 1]
+
+  const activeToday = lastActiveDate === todayKey
 
   const streakStillActive =
-    lastActiveDate === todayKey ||
+    activeToday ||
     lastActiveDate === yesterdayKey
 
   return {
-    currentStreak: streakStillActive
-      ? calculateCurrentStreak(activeDateKeys)
-      : 0,
+    activeToday,
     bestStreak,
-    activeToday: lastActiveDate === todayKey,
+    currentStreak: streakStillActive
+      ? calculateCurrentStreak(uniqueDates)
+      : 0,
     lastActiveDate,
   }
 }
@@ -75,18 +84,15 @@ function calculateCurrentStreak(
     index > 0;
     index -= 1
   ) {
-    const currentDate = parseLocalDateKey(
-      dateKeys[index],
-    )
-
     const previousDate = parseLocalDateKey(
       dateKeys[index - 1],
     )
 
-    if (
-      getLocalDateKey(addLocalDays(previousDate, 1)) !==
-      getLocalDateKey(currentDate)
-    ) {
+    const expectedDateKey = getLocalDateKey(
+      addLocalDays(previousDate, 1),
+    )
+
+    if (dateKeys[index] !== expectedDateKey) {
       break
     }
 
@@ -99,10 +105,6 @@ function calculateCurrentStreak(
 function calculateLongestStreak(
   dateKeys: string[],
 ): number {
-  if (dateKeys.length === 0) {
-    return 0
-  }
-
   let longestStreak = 1
   let currentStreak = 1
 

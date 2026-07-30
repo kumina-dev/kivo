@@ -16,6 +16,7 @@ import { PrimaryButton } from '@/components/ui/primary-button'
 import { Screen } from '@/components/ui/screen'
 import { colors, radius, spacing } from '@/constants/theme'
 import { getPointBalance } from '@/db/points'
+import { getStreakStats, type StreakStats } from '@/db/streaks'
 import {
   completeTask,
   getAvailableTasks,
@@ -31,14 +32,27 @@ export default function HomeScreen() {
   const [completingTaskId, setCompletingTaskId] =
     useState<number>()
 
+  const [streak, setStreak] = useState<StreakStats>({
+    activeToday: false,
+    bestStreak: 0,
+    currentStreak: 0,
+    lastActiveDate: null,
+  })
+
   const loadDashboard = useCallback(async (): Promise<void> => {
-    const [nextBalance, nextTasks] = await Promise.all([
+    const [
+      nextBalance,
+      nextTasks,
+      nextStreak,
+    ] = await Promise.all([
       getPointBalance(db),
       getAvailableTasks(db),
+      getStreakStats(db),
     ])
 
     setBalance(nextBalance)
     setTasks(nextTasks)
+    setStreak(nextStreak)
   }, [db])
 
   useFocusEffect(
@@ -47,14 +61,20 @@ export default function HomeScreen() {
 
       async function load(): Promise<void> {
         try {
-          const [nextBalance, nextTasks] = await Promise.all([
+          const [
+            nextBalance,
+            nextTasks,
+            nextStreak,
+          ] = await Promise.all([
             getPointBalance(db),
             getAvailableTasks(db),
+            getStreakStats(db),
           ])
 
           if (active) {
             setBalance(nextBalance)
             setTasks(nextTasks)
+            setStreak(nextStreak)
           }
         } catch (error) {
           console.error(error)
@@ -117,6 +137,46 @@ export default function HomeScreen() {
 
         <AppText variant="caption">
           Complete tasks and spend the points on configured rewards.
+        </AppText>
+      </Card>
+
+      <Card style={styles.streakCard}>
+        <View style={styles.streakHeader}>
+          <View style={styles.streakContent}>
+            <AppText variant="caption">
+              Daily streak
+            </AppText>
+
+            <AppText style={styles.streakValue}>
+              {loading
+                ? '–'
+                : `${streak.currentStreak} ${
+                    streak.currentStreak === 1
+                      ? 'day'
+                      : 'days'
+                  }`}
+            </AppText>
+          </View>
+
+          <View style={styles.streakBest}>
+            <AppText variant="caption">
+              Best
+            </AppText>
+
+            <AppText style={styles.streakBestValue}>
+              {loading ? '–' : streak.bestStreak}
+            </AppText>
+          </View>
+        </View>
+
+        <AppText variant="caption">
+          {loading
+            ? 'Checking recent activity…'
+            : streak.activeToday
+              ? 'Today is already counted.'
+              : streak.currentStreak > 0
+                ? 'Complete a task today to continue the streak.'
+                : 'Complete a task to start a new streak.'}
         </AppText>
       </Card>
 
@@ -239,6 +299,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
+  },
+  streakCard: {
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  streakHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  streakContent: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  streakValue: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  streakBest: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  streakBestValue: {
+    fontSize: 22,
+    fontWeight: '700',
   },
   section: {
     gap: spacing.md,

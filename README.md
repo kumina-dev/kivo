@@ -102,7 +102,7 @@ Kivo is under active development and is not yet considered production-ready.
 - [x] Backup import
 - [x] Archived tasks and rewards
 - [x] Permanent deletion from archive
-- [ ] Daily streaks
+- [x] Daily streaks
 - [ ] Levels and experience
 - [ ] Weekly challenges
 - [ ] Negative-point bad habits

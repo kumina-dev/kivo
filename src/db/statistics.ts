@@ -1,9 +1,11 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
+import { getStreakStats } from '@/db/streaks'
 import type {
   AppStatistics,
   DailyPointActivity,
 } from '@/types/statistics'
+import { getLocalDateKey } from '@/utils/date'
 
 type SummaryRow = {
   current_balance: number
@@ -18,22 +20,10 @@ type CountRow = {
   count: number
 }
 
-type CompletionDateRow = {
-  completion_date: string
-}
-
 type DailyActivityRow = {
   activity_date: string
   earned: number
   spent: number
-}
-
-function getLocalDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
 }
 
 function addDays(date: Date, amount: number): Date {
@@ -41,83 +31,6 @@ function addDays(date: Date, amount: number): Date {
   nextDate.setDate(nextDate.getDate() + amount)
 
   return nextDate
-}
-
-function calculateStreaks(
-  completionDates: string[],
-  today = new Date(),
-): {
-  currentStreak: number
-  longestStreak: number
-} {
-  const uniqueDates = Array.from(
-    new Set(completionDates),
-  ).sort()
-
-  if (uniqueDates.length === 0) {
-    return {
-      currentStreak: 0,
-      longestStreak: 0,
-    }
-  }
-
-  let longestStreak = 1
-  let runningStreak = 1
-
-  for (let index = 1; index < uniqueDates.length; index += 1) {
-    const previousDate = new Date(
-      `${uniqueDates[index - 1]}T12:00:00`,
-    )
-    const currentDate = new Date(
-      `${uniqueDates[index]}T12:00:00`,
-    )
-
-    const expectedDate = addDays(previousDate, 1)
-
-    if (
-      getLocalDateKey(expectedDate) ===
-      getLocalDateKey(currentDate)
-    ) {
-      runningStreak += 1
-      longestStreak = Math.max(
-        longestStreak,
-        runningStreak,
-      )
-    } else {
-      runningStreak = 1
-    }
-  }
-
-  const completionDateSet = new Set(uniqueDates)
-  const todayKey = getLocalDateKey(today)
-  const yesterdayKey = getLocalDateKey(addDays(today, -1))
-
-  let cursor: Date
-
-  if (completionDateSet.has(todayKey)) {
-    cursor = today
-  } else if (completionDateSet.has(yesterdayKey)) {
-    cursor = addDays(today, -1)
-  } else {
-    return {
-      currentStreak: 0,
-      longestStreak,
-    }
-  }
-
-  let currentStreak = 0
-
-  while (
-    completionDateSet.has(getLocalDateKey(cursor))
-  ) {
-    currentStreak += 1
-    cursor = addDays(cursor, -1)
-  }
-
-  return {
-    currentStreak,
-    longestStreak,
-  }
 }
 
 function buildRecentActivity(
@@ -154,7 +67,7 @@ export async function getAppStatistics(
     summary,
     activeTasksResult,
     activeRewardsResult,
-    completionDateRows,
+    streaks,
     activityRows,
   ] = await Promise.all([
     db.getFirstAsync<SummaryRow>(`
@@ -215,12 +128,7 @@ export async function getAppStatistics(
       WHERE archived_at IS NULL
     `),
 
-    db.getAllAsync<CompletionDateRow>(`
-      SELECT DISTINCT
-        date(completed_at, 'localtime') AS completion_date
-      FROM task_completions
-      ORDER BY completion_date ASC
-    `),
+    getStreakStats(db),
 
     db.getAllAsync<DailyActivityRow>(`
       SELECT
@@ -255,12 +163,6 @@ export async function getAppStatistics(
     `),
   ])
 
-  const streaks = calculateStreaks(
-    completionDateRows.map(
-      (row) => row.completion_date,
-    ),
-  )
-
   return {
     currentBalance: summary?.current_balance ?? 0,
     totalEarned: summary?.total_earned ?? 0,
@@ -273,7 +175,7 @@ export async function getAppStatistics(
     activeTasks: activeTasksResult?.count ?? 0,
     activeRewards: activeRewardsResult?.count ?? 0,
     currentStreak: streaks.currentStreak,
-    longestStreak: streaks.longestStreak,
+    longestStreak: streaks.bestStreak,
     recentActivity: buildRecentActivity(activityRows),
   }
 }
